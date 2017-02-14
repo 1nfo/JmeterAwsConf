@@ -1,0 +1,18 @@
+{
+  "profile_name": "admin_in_test",
+  "region": "us-west-2",
+  "zone": "us-west-2a",
+  "pemFilePath": "/Users/shilzhao/Jmeter_test_key_pair.pem",
+  "security_groups": [
+    "Jmeter_test_group"
+  ],
+  "InstType": {
+    "master": "t2.micro",
+    "slave": "t2.micro"
+  },
+  "username": "ubuntu",
+  "ami": {
+    "basic": "ami-68de5a08",
+    "LXDM": "ami-01d95d61"
+  }
+}
