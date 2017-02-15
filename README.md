@@ -1,5 +1,20 @@
 # JmeterAwsConf (based on boto3)
 
+## overview
+...
+
+## Todo
+1. class seperate
+2. reduce dependency 
+2. task manager
+3. comments and docs
+3. cluster / environment overall design refactoring
+
+
+## pointer
+1. always one master
+2. one cluster one task each times
+
 ## Prerequisites
 
 1. *python3*

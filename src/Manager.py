@@ -37,63 +37,67 @@ class InstanceManager(Manager):
     def startInstances(self,IDs,verbose):
         res = self.client.start_instances(InstanceIds=IDs) if IDs else "No instance in the list"
         self.updateInstances()
-        if verbose:print(json.dumps(res,indent=2))
+        if verbose or verbose is None and self.verboseOrNot:
+            print(json.dumps(res,indent=2))
         return res
         
     def stopInstances(self,IDs,verbose):
         res = self.client.stop_instances(InstanceIds=IDs) if IDs else "No instance in the list"
         self.updateInstances()
-        if verbose:print(json.dumps(res,indent=2))
+        if verbose or verbose is None and self.verboseOrNot:
+            print(json.dumps(res,indent=2))
         return res
     
     def terminateInstances(self,IDs,verbose):
         res = self.client.terminate_instances(InstanceIds=IDs) if IDs else "No instance in the list"
         self.updateInstances()
-        if verbose:print(json.dumps(res,indent=2))
+        if verbose or verbose is None and self.verboseOrNot:
+            print(json.dumps(res,indent=2))
         return res
     
     def creatInstances(self,ImageID,num,InstanceType,SecurityGroups,area,verbose):
         res = self.client.run_instances(ImageId=ImageID,MinCount=num,MaxCount=num,\
                                         InstanceType=InstanceType,SecurityGroups=SecurityGroups, \
                                         Placement = {"AvailabilityZone":area})
-        if verbose:print(res)
+        if verbose or verbose is None and self.verboseOrNot:
+            print(res)
         return res
         
     def startMaster(self,verbose=None):
         if(self.master):
-            self.startInstances([self.master['InstanceId']],verbose or self.verboseOrNot)
+            self.startInstances([self.master['InstanceId']],verbose)
     
     def stopMaster(self,verbose=None):
         if(self.master):
-            self.stopInstances([self.master['InstanceId']],verbose or self.verboseOrNot)
+            self.stopInstances([self.master['InstanceId']],verbose)
     
     def startSlaves(self,verbose=None):
-        self.startInstances([i['InstanceId'] for i in self.slaves],verbose or self.verboseOrNot)
+        self.startInstances([i['InstanceId'] for i in self.slaves],verbose)
         
     def stopSlaves(self,verbose=None):
-        self.stopInstances([i['InstanceId'] for i in self.slaves],verbose or self.verboseOrNot)
+        self.stopInstances([i['InstanceId'] for i in self.slaves],verbose)
         
     def startAll(self,verbose=None):
         self.startInstances([self.master['InstanceId']],verbose)
-        self.startInstances([i['InstanceId'] for i in self.slaves],verbose or self.verboseOrNot)
+        self.startInstances([i['InstanceId'] for i in self.slaves],verbose )
     
     def stopAll(self,verbose=None):
         self.stopInstances([self.master['InstanceId']],verbose)
-        self.stopInstances([i['InstanceId'] for i in self.slaves],verbose or self.verboseOrNot)
+        self.stopInstances([i['InstanceId'] for i in self.slaves],verbose)
     
     def terminateMaster(self,verbose=None):
         if(self.master):
-            return self.terminateInstances([self.master["InstanceId"]],verbose or self.verboseOrNot)
+            return self.terminateInstances([self.master["InstanceId"]],verbose)
         else: return "No master running"
     
     def terminateSlaves(self,verbose=None):
-        return self.terminateInstances([i["InstanceId"] for i in self.slaves],verbose or self.verboseOrNot)
+        return self.terminateInstances([i["InstanceId"] for i in self.slaves],verbose)
     
-    def addMaster(self,LXDM=True,iType=None,verbose=None):
+    def addMaster(self,LXDM=True,instType=None,verbose=None):
         if not self.master:
             imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
-            instType = self.config.instType["master"] if not iType else iType
-            res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose or self.verboseOrNot)
+            instType = self.config.instType["master"] if not instType else instType
+            res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose)
             ID = res['Instances'][0]["InstanceId"]
             self.client.create_tags(Resources = [ID], Tags = [{'Key': 'Name', 'Value': 'Master'}])  
             self.updateInstances()
@@ -103,7 +107,7 @@ class InstanceManager(Manager):
     def addSlaves(self,num,LXDM=False,iType=None,verbose=None):
         imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
         instType = self.config.instType["slave"] if not iType else iType
-        res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose or self.verboseOrNot)
+        res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
         self.client.create_tags(Resources = IDs, Tags = [{'Key': 'Name', 'Value': 'Slave'}]) 
         self.updateInstances()
@@ -134,12 +138,15 @@ class SSHConnectionManager(Manager):
         for ID in IDs:
             self.slavesConn[ID].close()
             
-    def cmdMaster(self,cmd,verbose=False):
-        self.masterConn.cmd(cmd, verbose or self.verboseOrNot)
+    def cmdMaster(self,cmd,verbose=None):
+        transport = self.masterConn.ssh.get_transport()
+        if not transport or not transport.is_active(): print("Not active connection")
+        else: self.masterConn.cmd(cmd, verbose if verbose is not None else self.verboseOrNot)
     
     def cmdSlaves(self,cmd,IDs=[],verbose=None):
-        verbose = verbose or self.verboseOrNot
-        if not IDs: IDs = list(self.slavesConn.keys())
+        verbose = verbose if verbose is not None else self.verboseOrNot
+        transport = self.masterConn.ssh.get_transport()
+        if not IDs: IDs = [k for k in self.slavesConn if transport and transport.is_active()]
         # if cmd is list, cmd are mapped to different slaves
         if type(cmd)==list:
             n = len(cmd) if len(cmd)<len(IDs) else len(IDs)
@@ -154,5 +161,7 @@ class SSHConnectionManager(Manager):
                     self.slavesConn[ID].cmd(cmd[ID],verbose)
         # if str, all slaves exec the same one
         if type(cmd)==str:
-            for ID in IDs:
-                self.slavesConn[ID].cmd(cmd,verbose)
+            if not IDs: print("No active connection")
+            else:
+                for ID in IDs:
+                    self.slavesConn[ID].cmd(cmd,verbose)
