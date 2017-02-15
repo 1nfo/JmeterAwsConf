@@ -16,7 +16,7 @@ class DescribeInstancesParser(ResponseParser):
     
     def _getPublicIp(self,i):
         if not i["NetworkInterfaces"]: return "N/A"
-        return i["NetworkInterfaces"][0].get("Association",{"PublicIp":"Instance not running"})["PublicIp"] 
+        return i["NetworkInterfaces"][0].get("Association",{"PublicIp":"N/A"})["PublicIp"] 
     
     def _getSecurityGroups(self,i):
         return [j["GroupName"] for j in i["SecurityGroups"]]
@@ -33,7 +33,8 @@ class DescribeInstancesParser(ResponseParser):
                     "InstanceId":i["InstanceId"],
                     "PublicIp":self._getPublicIp(i),
                     "PrivateIpAddress":self._getPrivateIp(i),
-                    "Tags":i.get("Tags",[{"Value":"N/A"}])
+                    "Tags":i.get("Tags",[{"Value":"N/A"}]),
+                    "State":i.get("State",[{"Value":"N/A"}])
                 }  
                 for i in  instances
                 if (not self.sgIncluded or self._inSG(self._getSecurityGroups(i))) \

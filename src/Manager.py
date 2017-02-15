@@ -1,27 +1,28 @@
+import json
 from boto3 import Session
-from paramiko import SSHClient, AutoAddPolicy 
 from .Parser import DescribeInstancesParser
 
 class Manager(object):
-    pass
-    
-class InstanceManager(Manager):
-    def __init__(self,awsConfig):
-        self.descParser = None;
-        self.config = awsConfig
-        self.client = Session(profile_name=awsConfig.profile_name,region_name=awsConfig.region).client('ec2')
-        self.descParser = DescribeInstancesParser(sg=awsConfig.securityGroups)
-        self.master = None
-        self.slaves = []
-        self.updateInstances()
-        self.verboseOrNot = True;
-        
+    def __init__(self):
+        self.verboseOrNot = True
+
     def mute(self):
         self.verboseOrNot = False
     
     def verbose(self):
         # once set to be verbose, always it is.
         self.verboseOrNot = True
+    
+class InstanceManager(Manager):
+    def __init__(self,config):
+        Manager.__init__(self)
+        self.descParser = None
+        self.config = config
+        self.client = Session(profile_name=config.profile_name,region_name=config.region).client('ec2')
+        self.descParser = DescribeInstancesParser(sg=config.securityGroups)
+        self.master = None
+        self.slaves = []
+        self.updateInstances()
         
     def updateInstances(self):
         self.descParser.setResponse(self.client.describe_instances())
@@ -88,22 +89,70 @@ class InstanceManager(Manager):
     def terminateSlaves(self,verbose=None):
         return self.terminateInstances([i["InstanceId"] for i in self.slaves],verbose or self.verboseOrNot)
     
-    ## untested
-    def addMaster(self,LXDM=False,verbose=None):
+    def addMaster(self,LXDM=True,iType=None,verbose=None):
         if not self.master:
             imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
-            res = self.creatInstances(imageID,1,self.config.InstType["master"],self.config.securityGroups,self.config.zone,verbose or self.verboseOrNot)
+            instType = self.config.instType["master"] if not iType else iType
+            res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose or self.verboseOrNot)
             ID = res['Instances'][0]["InstanceId"]
             self.client.create_tags(Resources = [ID], Tags = [{'Key': 'Name', 'Value': 'Master'}])  
             self.updateInstances()
             return ID
         else :return "Running Master, Terminate it before lanuch a new one"
-    ## untested   
-    def addSlaves(self,num,LXDM=False,verbose=None):
+      
+    def addSlaves(self,num,LXDM=False,iType=None,verbose=None):
         imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
-        res = self.creatInstances(imageID,num,self.config.InstType["slave"],self.config.securityGroups,self.config.zone,verbose or self.verboseOrNot)
+        instType = self.config.instType["slave"] if not iType else iType
+        res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose or self.verboseOrNot)
         IDs = [i["InstanceId"] for i in res['Instances']]
         self.client.create_tags(Resources = IDs, Tags = [{'Key': 'Name', 'Value': 'Slave'}]) 
         self.updateInstances()
         return IDs
         
+class SSHConnectionManager(Manager):
+    def __init__(self,masterConn=None,slavesConn={}):
+        self.updateConnections(masterConn,slavesConn)
+        self.verboseOrNot = True
+    
+    def updateConnections(self,masterConn,slavesConn):
+        self.masterConn = masterConn
+        self.slavesConn = slavesConn
+
+    def connectMaster(self):
+        self.masterConn.connect()
+        
+    def closeMaster(self):
+        self.masterConn.close()
+        
+    def connectSlaves(self,IDs=[]):
+        if not IDs: IDs = list(self.slavesConn.keys())
+        for ID in IDs:
+            self.slavesConn[ID].connect()
+    
+    def closeSlaves(self,IDs=[]):
+        if not IDs: IDs = list(self.slavesConn.keys())
+        for ID in IDs:
+            self.slavesConn[ID].close()
+            
+    def cmdMaster(self,cmd,verbose=False):
+        self.masterConn.cmd(cmd, verbose or self.verboseOrNot)
+    
+    def cmdSlaves(self,cmd,IDs=[],verbose=None):
+        verbose = verbose or self.verboseOrNot
+        if not IDs: IDs = list(self.slavesConn.keys())
+        # if cmd is list, cmd are mapped to different slaves
+        if type(cmd)==list:
+            n = len(cmd) if len(cmd)<len(IDs) else len(IDs)
+            for i in range(n):
+                self.slavesConn[IDs[i]].cmd(cmd[i],verbose)
+        # if dict, mapping according to instance's id
+        if type(cmd)==dict:
+            if not IDs: print("parameter 'IDs' is specified but ignored since cmd included it")
+            for ID in cmd:
+                if not ID in self.slavesConn.keys(): print('%s is not found in SSH connection manager'%ID)
+                else:
+                    self.slavesConn[ID].cmd(cmd[ID],verbose)
+        # if str, all slaves exec the same one
+        if type(cmd)==str:
+            for ID in IDs:
+                self.slavesConn[ID].cmd(cmd,verbose)

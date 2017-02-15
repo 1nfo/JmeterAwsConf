@@ -10,6 +10,13 @@
 4. package:*paramiko*
 5. .profile:`alias cli="source <virtual-env>/bin/activate"`
 6. make sure `VIRTUAL_ENV` correct
+7. add `PYTHONSTARTUP` in *\<virtual-env\>\bin\activiate*, point to *\<virtual-env\>\autoscripts\startup.py*  
+ 	
+ 	startup.py  
+ 	```python
+ 	import JmeterAwsConf as j
+ 	```
+ 	
 6. [optional]modified: *\<virtual-env\>\bin\activiate*: alias `syn` cmd;`cd` to directory
 
 	>cd ~/Desktop/AWS_TEST  
