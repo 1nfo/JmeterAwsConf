@@ -1,7 +1,5 @@
 from paramiko import SSHClient, AutoAddPolicy 
-
-class Connection(object):
-    pass
+from .Connection import *
 
 class SSHConnection(Connection):
     def __init__(self,config):

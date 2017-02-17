@@ -11,9 +11,12 @@
 3. cluster / environment overall design refactoring
 
 
-## pointer
+## points
 1. always one master
-2. one cluster one task each times
+3. The usernames to login EC2 instances should be same, now it is "ubuntu". 
+4. The ssh key file is also same in the cluster.
+4. ?one cluster one task each times?
+5. 
 
 ## Prerequisites
 

@@ -1,6 +1,4 @@
-class ResponseParser(object):
-    def __init__(self,response):
-        self.response = response
+from .ResponseParser import *
 
 class DescribeInstancesParser(ResponseParser):
     def __init__(self,reponse=None,sg = []):
