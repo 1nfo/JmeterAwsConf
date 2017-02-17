@@ -4,17 +4,19 @@
 ...
 
 ## Todo
-1. class seperate
-2. reduce dependency 
+1. [√]class seperate refactoring
+2. [√]reduce dependency 
 2. task manager
-3. comments and docs
+3. [√]comments and docs
 3. cluster / environment overall design refactoring
 
 
-## points
+## pointsd
 1. always one master
 3. The usernames to login EC2 instances should be same, now it is "ubuntu". 
 4. The ssh key file is also same in the cluster.
+5. configuration parameters are stored under /config
+6. Master/slaves are identified by tag, don't change tag!
 4. ?one cluster one task each times?
 5. 
 
@@ -52,11 +54,21 @@
 
 ## Components
 
-Three roles: **Config**, **Parser**, **Manager**
-![](./class.png)
+Four roles: **Config**, **Parser**, **Manager**, **Connection**
+
+### Instance Manager
+![](./InstMngr.png)
 
 **config** keeps configuration variables which import config.json.  
 **parser** is responsible for parsing the response from ec2 client.  
 **instance manager** controls instances lifecycle and some info like IPs.  
 
 More **Scheduler**, **SSHManager**, **SSHConfig** ...
+
+### Connection Manager
+Three roles: **Config**, **Manager**
+![](./ConnMngr.png)
+
+**config** keeps configuration variables which import config.json.  
+**connection** is responsible for buliding ssh channel between aws ec2 node and local client.  
+**SSH connection manager** passing command to the remote nodes to excute  

@@ -1,6 +1,8 @@
 from .ResponseParser import *
 
+## responsilble for parsing describe instances response
 class DescribeInstancesParser(ResponseParser):
+    ## sg (security group) is for filtering nodes
     def __init__(self,reponse=None,sg = []):
         ResponseParser.__init__(self,reponse)
         self.sgIncluded = sg
@@ -22,6 +24,7 @@ class DescribeInstancesParser(ResponseParser):
     def _inSG(self, A):
         return any(i in A for i in self.sgIncluded)
     
+    ## return list of instances whoes sg is in the sgIncluded.
     def listDetails(self):
         instances = []
         for i in self.response["Reservations"]:

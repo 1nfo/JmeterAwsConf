@@ -1,10 +1,13 @@
 from .Manager import Manager
-        
+
+## connect to cluster by ssh and execute commands       
 class SSHConnectionManager(Manager):
     def __init__(self,masterConn=None,slavesConn={}):
         self.updateConnections(masterConn,slavesConn)
         self.verboseOrNot = True
     
+    ## every times master / slave public ip changed,
+    #  the connection config need to be updated
     def updateConnections(self,masterConn,slavesConn):
         self.masterConn = masterConn
         self.slavesConn = slavesConn
@@ -14,23 +17,35 @@ class SSHConnectionManager(Manager):
         
     def closeMaster(self):
         self.masterConn.close()
-        
-    def connectSlaves(self,IDs=[]):
-        if not IDs: IDs = list(self.slavesConn.keys())
+    
+    ## connect slaves whoes ID is in the IDs list,
+    #  if IDs is not specified or none, connect all slaves.  
+    def connectSlaves(self,IDs=None):
+        if IDs is None: IDs = list(self.slavesConn.keys())
         for ID in IDs:
             self.slavesConn[ID].connect()
     
-    def closeSlaves(self,IDs=[]):
-        if not IDs: IDs = list(self.slavesConn.keys())
+    ## close slaves whoes ID is in the IDs list,
+    #  if IDs is not specified or none, connect all slaves. 
+    #  issue: what if connection is not active?
+    def closeSlaves(self,IDs=None):
+        if IDs is None: IDs = list(self.slavesConn.keys())
         for ID in IDs:
             self.slavesConn[ID].close()
-            
+    
+    ## give master a command to execute        
     def cmdMaster(self,cmd,verbose=None):
         transport = self.masterConn.ssh.get_transport()
         if not transport or not transport.is_active(): print("Not active connection")
         else: self.masterConn.cmd(cmd, verbose if verbose is not None else self.verboseOrNot)
     
-    def cmdSlaves(self,cmd,IDs=[],verbose=None):
+    ## give slaves command(s) to execute 
+    #  if cmd is a string, then all slaves receive the same cmd,
+    #  if it is a list:
+    #           1. if list length > # of active connections, ignore extra cmds
+    #           2. otherwise, find the top n slaves and assign them cmds in the list side by sid 
+    #  if it is a dict, then key is instance ID, value is cmd for that instance
+    def cmdSlaves(self,cmd,IDs=None,verbose=None):
         verbose = verbose if verbose is not None else self.verboseOrNot
         transport = self.masterConn.ssh.get_transport()
         if not IDs: IDs = [k for k in self.slavesConn if transport and transport.is_active()]
