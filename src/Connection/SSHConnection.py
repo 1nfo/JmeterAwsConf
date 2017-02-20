@@ -28,6 +28,7 @@ class SSHConnection(Connection):
         if stderr:
             for i in stderr:
                 print(i.replace("\n","\n>>> "),end="")
+        print(" ")
     
     def close(self):
         self.ssh.close()

@@ -7,23 +7,25 @@ from .Manager import Manager
 #  to control master and slaves' lifecycle
 class InstanceManager(Manager):
     ## init with AWSConfig class
-    def __init__(self,config):
+    def __init__(self,taskID,config):
         Manager.__init__(self)
+        self.taskID = taskID
         self.descParser = None
         self.config = config
         self.client = Session(profile_name=config.profile_name,region_name=config.region).client('ec2')
-        self.descParser = DescribeInstancesParser(sg=config.securityGroups)
+        self.descParser = DescribeInstancesParser()
         self.master = None
         self.slaves = []
         self.updateInstances()
     
     ## requests describe instances and updates master/slaves information    
     def updateInstances(self):
-        self.descParser.setResponse(self.client.describe_instances())
+        filter_cond = [{"Name":"tag:TaskID","Values":[self.taskID]}]
+        self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
         details = self.descParser.listDetails();
-        master = [i for i in details if i["Tags"][0]["Value"]=="Master"]
+        master = [i for i in details if i["Role"]=="Master"]
         self.master = master[0] if master else None
-        self.slaves = [i for i in details if i["Tags"][0]["Value"]=="Slave"]
+        self.slaves = [i for i in details if i["Role"]=="Slave"]
     
     ## list master/ slaves info
     def listInstances(self):
@@ -77,7 +79,8 @@ class InstanceManager(Manager):
         self.stopInstances([i['InstanceId'] for i in self.slaves],verbose)
         
     def startAll(self,verbose=None):
-        self.startInstances([self.master['InstanceId']],verbose)
+        if(self.master):
+            self.startInstances([self.master['InstanceId']if self.master else None],verbose)
         self.startInstances([i['InstanceId'] for i in self.slaves],verbose )
     
     def stopAll(self,verbose=None):
@@ -101,7 +104,7 @@ class InstanceManager(Manager):
             instType = self.config.instType["master"] if not instType else instType
             res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose)
             ID = res['Instances'][0]["InstanceId"]
-            self.client.create_tags(Resources = [ID], Tags = [{'Key': 'Name', 'Value': 'Master'}])  
+            self.client.create_tags(Resources = [ID], Tags = [{'Key': 'Name', 'Value': 'Master'},{'Key':"TaskID","Value":self.taskID}])  
             self.updateInstances()
             return ID
         else :return "Running Master, Terminate it before lanuch a new one"
@@ -114,6 +117,6 @@ class InstanceManager(Manager):
         instType = self.config.instType["slave"] if not instType else instType
         res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
-        self.client.create_tags(Resources = IDs, Tags = [{'Key': 'Name', 'Value': 'Slave'}]) 
+        self.client.create_tags(Resources = IDs, Tags = [{'Key': 'Name', 'Value': 'Slave'},{'Key':"TaskID","Value":self.taskID}]) 
         self.updateInstances()
         return IDs

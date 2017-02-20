@@ -47,8 +47,10 @@ class SSHConnectionManager(Manager):
     #  if it is a dict, then key is instance ID, value is cmd for that instance
     def cmdSlaves(self,cmd,IDs=None,verbose=None):
         verbose = verbose if verbose is not None else self.verboseOrNot
-        transport = self.masterConn.ssh.get_transport()
-        if not IDs: IDs = [k for k in self.slavesConn if transport and transport.is_active()]
+        if not IDs: IDs = [k for k in self.slavesConn 
+                            if self.slavesConn[k].ssh.get_transport() \
+                                and self.slavesConn[k].ssh.get_transport().is_active()
+                          ]
         # if cmd is list, cmd are mapped to different slaves
         if type(cmd)==list:
             n = len(cmd) if len(cmd)<len(IDs) else len(IDs)

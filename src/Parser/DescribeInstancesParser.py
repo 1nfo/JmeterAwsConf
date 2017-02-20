@@ -3,9 +3,8 @@ from .ResponseParser import *
 ## responsilble for parsing describe instances response
 class DescribeInstancesParser(ResponseParser):
     ## sg (security group) is for filtering nodes
-    def __init__(self,reponse=None,sg = []):
+    def __init__(self,reponse=None):
         ResponseParser.__init__(self,reponse)
-        self.sgIncluded = sg
     
     def setResponse(self,response):
         self.response = response
@@ -20,25 +19,26 @@ class DescribeInstancesParser(ResponseParser):
     
     def _getSecurityGroups(self,i):
         return [j["GroupName"] for j in i["SecurityGroups"]]
+
+    def _getTagName(self,i):
+        for j in i:
+            if j["Key"]=="Name": return j["Value"]
+        return "N/A"
     
-    def _inSG(self, A):
-        return any(i in A for i in self.sgIncluded)
-    
-    ## return list of instances whoes sg is in the sgIncluded.
+    ## return list of instances 
     def listDetails(self):
         instances = []
         for i in self.response["Reservations"]:
             for j in i["Instances"]:
                 instances.append(j)
-        return [{
+        return [
+                {
                     "InstanceId":i["InstanceId"],
                     "PublicIp":self._getPublicIp(i),
                     "PrivateIpAddress":self._getPrivateIp(i),
-                    "Tags":i.get("Tags",[{"Value":"N/A"}]),
+                    "Role":self._getTagName(i.get("Tags",[])),
                     "State":i.get("State",[{"Value":"N/A"}])
                 }  
-                for i in  instances
-                if (not self.sgIncluded or self._inSG(self._getSecurityGroups(i))) \
-                    and i["State"]["Name"] !="terminated"
+                for i in  instances if i["State"]["Name"] !="terminated"
                ]
                
