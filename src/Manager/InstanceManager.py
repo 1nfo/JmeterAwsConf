@@ -18,24 +18,29 @@ class InstanceManager(Manager):
         
     def setTask(self,taskName,taskID):
         if(taskName and taskID is None):
-            res = self.checkTask(taskName)
+            res = self.getDupTaskIds(taskName)
             if len(res)>1:
-                print("Found multiple tasks named %s"%taskName)
-                print(res);
-                print("Specified one of above taskIDs and continue, or try a new task name")
-                return  
+                msg = "Found multiple tasks named %s"%taskName
+                li = res
+                msg2 = "Specified one of above taskIDs and continue, or try a new task name"
+                raise Exception(msg,res,msg2)  
         self.taskName = taskName
         self.taskID = taskID if taskID else res[0] if res else self._genID(taskName)
         self.master = None
         self.slaves = []
         self.updateInstances()
 
-    def checkTask(self,taskName):
+    def getDupTaskIds(self,taskName):
         filter_cond = [{"Name":"tag:"+_TAG_TASKNAME_,"Values":[taskName]}]
         self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
-        taskIDs = self.descParser.listTaskIDs();
-        return taskIDs
+        return self.descParser.listTaskIDs()
     
+    def allInitialized(self):
+        IDs = [i["InstanceId"] for i in self.listInstances()]
+        res = self.client.describe_instance_status(InstanceIds = IDs)['InstanceStatuses']
+        index = str([i["InstanceStatus"]['Details'] for i in res]).find("initializing") 
+        return True if res and index<0 else False
+
     def _genID(self,name):
         import os,time
         return ("%s_%s@%s_%s")%(name,os.getlogin(),os.uname()[1],time.ctime().replace(" ","_"))   
@@ -93,26 +98,25 @@ class InstanceManager(Manager):
 
     def startMaster(self,verbose=None):
         if(self.master):
-            self.startInstances([self.master['InstanceId']],verbose)
+                self.startInstances([self.master['InstanceId']],verbose)
     
     def stopMaster(self,verbose=None):
         if(self.master):
             self.stopInstances([self.master['InstanceId']],verbose)
     
     def startSlaves(self,verbose=None):
-        self.startInstances([i['InstanceId'] for i in self.slaves],verbose)
+        self.startInstances([i['InstanceId'] for i in self.slaves if i["State"]!="stopping"],verbose)
         
     def stopSlaves(self,verbose=None):
-        self.stopInstances([i['InstanceId'] for i in self.slaves],verbose)
+        self.stopInstances([i['InstanceId'] for i in self.slaves if i["State"]!="stopping"],verbose)
         
     def startAll(self,verbose=None):
-        if(self.master):
-            self.startInstances([self.master['InstanceId']if self.master else None],verbose)
-        self.startInstances([i['InstanceId'] for i in self.slaves],verbose )
+        self.startMaster(verbose)
+        self.startSlaves(verbose)
     
     def stopAll(self,verbose=None):
-        self.stopInstances([self.master['InstanceId']],verbose)
-        self.stopInstances([i['InstanceId'] for i in self.slaves],verbose)
+        self.stopMaster(verbose)
+        self.stopSlaves(verbose)
     
     def terminateMaster(self,verbose=None):
         if(self.master):

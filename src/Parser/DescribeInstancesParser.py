@@ -41,7 +41,7 @@ class DescribeInstancesParser(ResponseParser):
                     "Role":self._getTagName(i.get("Tags",[])),
                     "State":i.get("State",[{"Value":"N/A"}])
                 }  
-                for i in  instances if i["State"]["Name"] !="terminated"
+                for i in  instances if i["State"]["Name"] not in ["terminated","shutting-down"]
                ]
     
     def _getTaskIDs(self,i):
@@ -53,5 +53,5 @@ class DescribeInstancesParser(ResponseParser):
         for i in self.response["Reservations"]:
             for j in i["Instances"]:
                 instances.append(j)
-        return list(set([self._getTaskIDs(i.get("Tags",[])) for i in instances if i["State"]["Name"] !="terminated"]))
+        return list(set([self._getTaskIDs(i.get("Tags",[])) for i in instances if i["State"]["Name"] not in ["terminated","shutting-down"]]))
                

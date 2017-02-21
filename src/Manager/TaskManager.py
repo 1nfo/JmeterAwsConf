@@ -28,6 +28,17 @@ class TaskManager(Manager):
         if self.verboseOrNot:
             print("Set slave number: %d"%slvNum)
         
+    def checkStatus(self):
+        import time
+        count=0
+        while(count<30 and not self.instMngr.allInitialized()):
+            time.sleep(10)
+            count+=1
+            if self.verboseOrNot:
+                print("Some instances are still initializing")
+        if self.instMngr.allInitialized(): return True
+        return False
+
     def startRDP(self):
         if self.verboseOrNot:
             print("starting lightdm")
@@ -61,7 +72,8 @@ class TaskManager(Manager):
         cmd = replaceStr([i["PrivateIpAddress"] for i in self.instMngr.slaves])
         self.connMngr.cmdMaster(cmd)
         self.connMngr.closeMaster()
-        
+    
+    ## start only running slaves    
     def startSlavesServer(self):
         if self.verboseOrNot:
             print("Starting jmeter server in slaves")
@@ -72,13 +84,16 @@ class TaskManager(Manager):
     def runTest(self,path,output):
         def parseCmd(path,output):
             li = path.split("/")
-            return "source .profile && cd "+" && cd ".join(li[:-1]),"jmeter -n -t "+li[-1]+" -r -l "+output
+            return "source .profile && cd "+" && cd ".join(li[:-1]),"jmeter -n -t "+li[-1]+" -r"
         self.connMngr.connectMaster()
         cmds = parseCmd(path,output)
         self.connMngr.cmdMaster(" && ".join(cmds),verbose=True)
-        self.connMngr.cmdMaster(" && ".join([cmds[0],"cat "+output]))
+        self.connMngr.cmdMaster(" && ".join([cmds[0],"cat "+output]),verbose=True)
+        self.connMngr.cmdMaster(" && ".join([cmds[0],"cat "+"jmeter.log"]),verbose=True)
         self.connMngr.closeMaster()
 
     def cleanup(self):
+        if self.verboseOrNot:
+            print("Terminating All nodes")
         self.instMngr.terminateMaster()
         self.instMngr.terminateSlaves()

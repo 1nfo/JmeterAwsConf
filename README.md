@@ -11,12 +11,13 @@
 3. cluster / environment overall design refactoring
 
 ### features to add:
- 1. after init, return if find an existing TaskID
+ 1. [√]after init, return if find an existing TaskID
  2. upload dirctory
- 2. add more tags, time stamp and author, modified instances manager: addTags func.
+ 3. S3 output test.csv and jmeter.log
+ 2. [√]add more tags, time stamp and author, modified instances manager: addTags func.
  3. task manager verbose
  4. return and print in other manager
- 5. tags name rules __\_\_JAC\_NAME\_\___
+ 5. [√]tags name rules __\_\_JAC\_NAME\_\___
  
 ### image updates: 
 ubuntu passwd; path
