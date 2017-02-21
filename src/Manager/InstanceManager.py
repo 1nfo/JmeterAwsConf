@@ -1,31 +1,55 @@
 import json
 from boto3 import Session
-from ..Parser import DescribeInstancesParser
+from ..Parser import DescribeInstancesParser,TAG_ROLE as _TAG_ROLE_
 from .Manager import Manager
     
+_TAG_TASKID_ = "__JAC_TaskID__"
+_TAG_TASKNAME_ = "__JAC_Name__"
+
 ## instance manager is responsible to provide wrapped API from SDK
 #  to control master and slaves' lifecycle
 class InstanceManager(Manager):
     ## init with AWSConfig class
-    def __init__(self,taskID,config):
+    def __init__(self,config):
         Manager.__init__(self)
-        self.taskID = taskID
-        self.descParser = None
         self.config = config
         self.client = Session(profile_name=config.profile_name,region_name=config.region).client('ec2')
         self.descParser = DescribeInstancesParser()
+        
+    def setTask(self,taskName,taskID):
+        if(taskName and taskID is None):
+            res = self.checkTask(taskName)
+            if len(res)>1:
+                print("Found multiple tasks named %s"%taskName)
+                print(res);
+                print("Specified one of above taskIDs and continue, or try a new task name")
+                return  
+        self.taskName = taskName
+        self.taskID = taskID if taskID else res[0] if res else self._genID(taskName)
         self.master = None
         self.slaves = []
         self.updateInstances()
+
+    def checkTask(self,taskName):
+        filter_cond = [{"Name":"tag:"+_TAG_TASKNAME_,"Values":[taskName]}]
+        self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
+        taskIDs = self.descParser.listTaskIDs();
+        return taskIDs
+    
+    def _genID(self,name):
+        import os,time
+        return ("%s_%s@%s_%s")%(name,os.getlogin(),os.uname()[1],time.ctime().replace(" ","_"))   
     
     ## requests describe instances and updates master/slaves information    
     def updateInstances(self):
-        filter_cond = [{"Name":"tag:TaskID","Values":[self.taskID]}]
+        filter_cond = [{"Name":"tag:"+_TAG_TASKID_,"Values":[self.taskID]}]
         self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
         details = self.descParser.listDetails();
         master = [i for i in details if i["Role"]=="Master"]
         self.master = master[0] if master else None
         self.slaves = [i for i in details if i["Role"]=="Slave"]
+        if self.verboseOrNot: 
+            print("Nodes: %d maseter and %d slave(s) under TASK %s"%(1 if self.master else 0,len(self.slaves),self.taskName))
     
     ## list master/ slaves info
     def listInstances(self):
@@ -34,25 +58,28 @@ class InstanceManager(Manager):
     ## internal use, start instances with given ID list.
     def startInstances(self,IDs,verbose):
         res = self.client.start_instances(InstanceIds=IDs) if IDs else "No instance in the list"
-        self.updateInstances()
         if verbose or verbose is None and self.verboseOrNot:
+            print("Start instances:"+str(IDs))
             print(json.dumps(res,indent=2))
+        self.updateInstances()
         return res
     
     ## internal use, stop a list of intances    
     def stopInstances(self,IDs,verbose):
         res = self.client.stop_instances(InstanceIds=IDs) if IDs else "No instance in the list"
-        self.updateInstances()
         if verbose or verbose is None and self.verboseOrNot:
+            print("Stop instances:"+str(IDs))
             print(json.dumps(res,indent=2))
+        self.updateInstances()
         return res
     
     ## internal use, stop a list of instances
     def terminateInstances(self,IDs,verbose):
         res = self.client.terminate_instances(InstanceIds=IDs) if IDs else "No instance in the list"
-        self.updateInstances()
         if verbose or verbose is None and self.verboseOrNot:
+            print("Terminate instances:"+str(IDs))
             print(json.dumps(res,indent=2))
+        self.updateInstances()
         return res
     
     ## internal use, lanuch a number of instances, with the same image ID, instance type, security groups and area
@@ -104,7 +131,7 @@ class InstanceManager(Manager):
             instType = self.config.instType["master"] if not instType else instType
             res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose)
             ID = res['Instances'][0]["InstanceId"]
-            self.client.create_tags(Resources = [ID], Tags = [{'Key': 'Name', 'Value': 'Master'},{'Key':"TaskID","Value":self.taskID}])  
+            self.client.create_tags(Resources = [ID], Tags = [{'Key': "Name", 'Value': 'JAC_NODE'},{'Key': _TAG_ROLE_, 'Value': 'Master'},{'Key':_TAG_TASKNAME_,"Value":self.taskName},{'Key':_TAG_TASKID_,"Value":self.taskID}])  
             self.updateInstances()
             return ID
         else :return "Running Master, Terminate it before lanuch a new one"
@@ -117,6 +144,6 @@ class InstanceManager(Manager):
         instType = self.config.instType["slave"] if not instType else instType
         res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
-        self.client.create_tags(Resources = IDs, Tags = [{'Key': 'Name', 'Value': 'Slave'},{'Key':"TaskID","Value":self.taskID}]) 
+        self.client.create_tags(Resources = IDs, Tags = [{'Key': "Name", 'Value': 'JAC_NODE'},{'Key': _TAG_ROLE_, 'Value': 'Slave'},{'Key':_TAG_TASKNAME_,"Value":self.taskName},{'Key':_TAG_TASKID_,"Value":self.taskID}]) 
         self.updateInstances()
         return IDs

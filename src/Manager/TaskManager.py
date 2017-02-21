@@ -3,22 +3,19 @@ from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
 
 class TaskManager(Manager):
-    def __init__(self, taskName, slvNum=0, config={}):
+    def __init__(self, taskName, slvNum, config, taskID=None):
         Manager.__init__(self)
         self.config = config
         self.awsConfig = AWSConfig(**config)
-        self.instMngr = InstanceManager(self._genID(taskName), self.awsConfig)
+        self.instMngr = InstanceManager(self.awsConfig)
+        self.instMngr.setTask(taskName,taskID)
         self.connMngr = SSHConnectionManager()
-        self.setSlaveNumber(slvNum)
-    
-    def _genID(self,name):
-        import os,time
-        return name
-        ## future feature: more tags on nodes
-        return"%s-%s@%s-%s"%(name,os.getlogin(),os.uname()[1],time.ctime().replace(" ","-"))
+        self.slaveNumber = slvNum
     
     def setupInstances(self):
-        if self.verboseOrNot:self.instMngr.addMaster()
+        if self.verboseOrNot:
+            print("Setting up instances")
+        self.instMngr.addMaster()
         diff = self.slaveNumber-len(self.instMngr.slaves)
         if diff<0 : 
             IDs = [i["InstanceId"] for i in self.instMngr.slaves[self.slaveNumber:]]
@@ -28,20 +25,28 @@ class TaskManager(Manager):
     
     def setSlaveNumber(self,slvNum):
         self.slaveNumber = slvNum
+        if self.verboseOrNot:
+            print("Set slave number: %d"%slvNum)
         
     def startRDP(self):
-        elf.connMngr.connectMaster()
+        if self.verboseOrNot:
+            print("starting lightdm")
+        self.connMngr.connectMaster()
         cmd = "sudo service lightdm start"
         self.connMngr.cmdMaster(cmd)
         self.connMngr.closeMaster()
         
     def refreshConnections(self):
+        if self.verboseOrNot:
+            print("Refreshing connection list")
         self.instMngr.updateInstances()
         masterConn = SSHConnection(SSHConfig(hostname = self.instMngr.master["PublicIp"],**self.config))
         slavesConn = {i['InstanceId']:SSHConnection(SSHConfig(hostname = i["PublicIp"],**self.config)) for i in self.instMngr.slaves}
         self.connMngr.updateConnections(masterConn,slavesConn)
 
     def updateRemotehost(self):
+        if self.verboseOrNot:
+            print("updating master remotehost list")
         def replaceStr(slaveIPs,propertiesFilePath="/usr/local/apache-jmeter-2.13/bin/jmeter.properties"):
             ret = "awk '/^remote_hosts/{gsub(/.+/,"
             ret +='"remote_hosts='
@@ -58,6 +63,22 @@ class TaskManager(Manager):
         self.connMngr.closeMaster()
         
     def startSlavesServer(self):
+        if self.verboseOrNot:
+            print("Starting jmeter server in slaves")
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("source .profile && jmeter-server",verbose=False)
         self.connMngr.closeSlaves()
+
+    def runTest(self,path,output):
+        def parseCmd(path,output):
+            li = path.split("/")
+            return "source .profile && cd "+" && cd ".join(li[:-1]),"jmeter -n -t "+li[-1]+" -r -l "+output
+        self.connMngr.connectMaster()
+        cmds = parseCmd(path,output)
+        self.connMngr.cmdMaster(" && ".join(cmds),verbose=True)
+        self.connMngr.cmdMaster(" && ".join([cmds[0],"cat "+output]))
+        self.connMngr.closeMaster()
+
+    def cleanup(self):
+        self.instMngr.terminateMaster()
+        self.instMngr.terminateSlaves()

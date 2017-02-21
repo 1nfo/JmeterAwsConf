@@ -12,6 +12,7 @@
 
 ### features to add:
  1. after init, return if find an existing TaskID
+ 2. upload dirctory
  2. add more tags, time stamp and author, modified instances manager: addTags func.
  3. task manager verbose
  4. return and print in other manager
@@ -20,6 +21,9 @@
 ### image updates: 
 ubuntu passwd; path
 
+### problem:
+1. only one case passed on AWS
+2. can't excute simultaneously 
 
 ## pointsd
 1. always one master

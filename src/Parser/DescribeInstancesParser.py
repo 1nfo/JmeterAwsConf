@@ -1,5 +1,7 @@
 from .ResponseParser import *
 
+TAG_ROLE = "__JAC_ROLE__"
+
 ## responsilble for parsing describe instances response
 class DescribeInstancesParser(ResponseParser):
     ## sg (security group) is for filtering nodes
@@ -22,7 +24,7 @@ class DescribeInstancesParser(ResponseParser):
 
     def _getTagName(self,i):
         for j in i:
-            if j["Key"]=="Name": return j["Value"]
+            if j["Key"]==TAG_ROLE: return j["Value"]
         return "N/A"
     
     ## return list of instances 
@@ -41,4 +43,15 @@ class DescribeInstancesParser(ResponseParser):
                 }  
                 for i in  instances if i["State"]["Name"] !="terminated"
                ]
+    
+    def _getTaskIDs(self,i):
+        for j in i:
+            if j["Key"]=="__JAC_TaskID__": return j["Value"]
+
+    def listTaskIDs(self):
+        instances = []
+        for i in self.response["Reservations"]:
+            for j in i["Instances"]:
+                instances.append(j)
+        return list(set([self._getTaskIDs(i.get("Tags",[])) for i in instances if i["State"]["Name"] !="terminated"]))
                
