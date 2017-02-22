@@ -15,11 +15,29 @@ CONFIG  = json.load(open(__path__[0]+"/config.json"))
 # 	connMngr = SSHConnectionManager(masterConn,slavesConn)
 
 def test():
-	taskMngr = TaskManager("dummy",2,CONFIG)
-	taskMngr.setSlaveNumber(3)
+	TaskName = "dummy"
+	NumberOfSalves = 2
+	UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+
+	taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
+	taskMngr.instMngr.mute()
+	taskMngr.connMngr.mute()
+	taskMngr.setUploadDir(UploadPath)
+	#taskMngr.setSlaveNumber(3)
 	taskMngr.setupInstances()
-	taskMngr.refreshConnections()
-	taskMngr.updateRemotehost()
-	taskMngr.startSlavesServer()
-	taskMngr.runTest("TEST_SAMPLES/MonthlyBenchmark_SmokeTest/MonthlyBenchmark_SmokeTest.jmx","test.csv")
-	
+	if taskMngr.checkStatus():    
+	    taskMngr.refreshConnections()
+	    taskMngr.uploadFiles()
+	    taskMngr.updateRemotehost()
+	    taskMngr.stopSlavesServer()
+	    taskMngr.startSlavesServer()
+	    taskMngr.startRDP()
+	    taskMngr.runTest("MonthlyBenchmark_SmokeTest.jmx","ttt.csv")
+
+def cleanup():
+	TaskName = "dummy"
+	NumberOfSalves = 2
+	UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+
+	taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
+	taskMngr.cleanup()
