@@ -13,7 +13,7 @@
   "username": "ubuntu",
   "ami": {
     "basic": "ami-68de5a08",
-    "LXDM": "ami-01d95d61"
+    "LXDM": "ami-1a93137a"
   },
   "propertiesPath":"/usr/local/apache-jmeter-2.13/bin/jmeter.properties"
 }

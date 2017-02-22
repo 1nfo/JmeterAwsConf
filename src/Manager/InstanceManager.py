@@ -15,11 +15,12 @@ class InstanceManager(Manager):
         self.config = config
         self.client = Session(profile_name=config.profile_name,region_name=config.region).client('ec2')
         self.descParser = DescribeInstancesParser()
-        
+    
+    ## set task name and id    
     def setTask(self,taskName,taskID):
         if(taskName and taskID is None):
             res = self.getDupTaskIds(taskName)
-            if len(res)>1:
+            if len(res)>0:
                 msg = "Found multiple tasks named %s"%taskName
                 li = res
                 msg2 = "Specified one of above taskIDs and continue, or try a new task name"
@@ -30,11 +31,13 @@ class InstanceManager(Manager):
         self.slaves = []
         self.updateInstances()
 
+    ## get TaskID set within JAC node on aws
     def getDupTaskIds(self,taskName):
         filter_cond = [{"Name":"tag:"+_TAG_TASKNAME_,"Values":[taskName]}]
         self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
         return self.descParser.listTaskIDs()
     
+    ## check all nodes is available to connection
     def allInitialized(self):
         IDs = [i["InstanceId"] for i in self.listInstances()]
         res = self.client.describe_instance_status(InstanceIds = IDs)['InstanceStatuses']
