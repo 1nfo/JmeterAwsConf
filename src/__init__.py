@@ -54,6 +54,11 @@ def cleanup():
 	TaskName = "dummy"
 	NumberOfSalves = 2
 	UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
-	taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
+	try:
+		taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
+	except Exception as exception:
+		print(exception.args[0])
+		print("Resuming first one: "+exception.args[1][0])
+		taskMngr = TaskManager(TaskName,NumberOfSalves,taskID=exception.args[1][0] ,config=CONFIG)
 	taskMngr.instMngr.mute()
 	taskMngr.cleanup()

@@ -53,12 +53,17 @@ class TaskManager(Manager):
             print("Uploading files")
         li = [i["PublicIp"] for i in self.instMngr.listInstances() if "PublicIp" in i.keys()]
         for ip in li:
-            strTuple = (self.config["pemFilePath"],self.UploadPath,self.config["username"],ip,self.instMngr.taskName)
-            cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s"%strTuple
-            os.system(cmds)
-            if verbose or verbose is None and self.verboseOrNot:
-                print(cmds)
-    
+            self._uploads(self.UploadPath,ip,self.instMngr.taskName,verbose)
+            
+    ## uploads from src to ip:~/des
+    def _uploads(self,src,ip,des,verbose):
+        strTuple = (self.config["pemFilePath"],src,self.config["username"],ip,des)
+        cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s"%strTuple
+        if verbose or verbose is None and self.verboseOrNot:
+            print(cmds)
+        os.system(cmds)
+        
+
     ## repeatedly check if all node under current task is ready to connection
     #  will be time-out after 5 mins    
     def checkStatus(self):
@@ -75,7 +80,7 @@ class TaskManager(Manager):
     #  the master must be lxdm image, where lightdm has installed already.
     def startRDP(self):
         if self.verboseOrNot:
-            print("starting lightdm")
+            print("Starting lightdm")
         self.connMngr.connectMaster()
         cmd = "sudo service lightdm start"
         self.connMngr.cmdMaster(cmd)
@@ -94,7 +99,7 @@ class TaskManager(Manager):
     ## update remote host to jmeter.properties files 
     def updateRemotehost(self):
         if self.verboseOrNot:
-            print("updating master remotehost list")
+            print("Updating master remotehost list")
         def replaceStr(slaveIPs):
             propertiesFilePath=self.config["propertiesPath"]
             ret = "awk '/^remote_hosts/{gsub(/.+/,"
@@ -131,10 +136,19 @@ class TaskManager(Manager):
     #  1. -t jmx, jmx file you want to run under you upload path
     #  2. -l output, the output file name
     def runTest(self,jmx,output):
+        import time
+        runJmeterCmd = "source .profile && cd %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,jmx,output)
+        uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s"\
+                        %(self.instMngr.taskName,output,self.config["S3Bucket"],
+                          self.instMngr.taskID,time.ctime().replace(" ","_"), self.config["profile_name"])
         self.connMngr.connectMaster()
-        self.connMngr.cmdMaster("source .profile && cd %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,jmx,output),verbose=True)
-        self.connMngr.cmdMaster("source .profile && cd %s && cat %s"%(self.instMngr.taskName,output),verbose=True)
-        self.connMngr.cmdMaster("source .profile && cd %s && cat jmeter.log"%(self.instMngr.taskName),verbose=True)
+        self.connMngr.cmdMaster(runJmeterCmd,verbose=True)
+        self._uploads(self.config[".awsPath"],self.instMngr.master["PublicIp"],".aws",verbose=self.verboseOrNot)
+        if self.verboseOrNot:
+            print("Uploading output csv to AWS S3")
+        self.connMngr.cmdMaster(uploadS3Cmd,verbose=self.verboseOrNot)
+        # self.connMngr.cmdMaster("source .profile && cd %s && cat %s"%(self.instMngr.taskName,output),verbose=True)
+        # self.connMngr.cmdMaster("source .profile && cd %s && cat jmeter.log"%(self.instMngr.taskName),verbose=True)
         self.connMngr.closeMaster()
 
     ## terminate all nodes

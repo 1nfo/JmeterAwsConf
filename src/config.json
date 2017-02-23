@@ -12,8 +12,10 @@
   },
   "username": "ubuntu",
   "ami": {
-    "basic": "ami-68de5a08",
-    "LXDM": "ami-1a93137a"
+    "basic" : "ami-42ab2b22",
+    "LXDM" : "ami-f87bfb98"
   },
-  "propertiesPath":"/usr/local/apache-jmeter-2.13/bin/jmeter.properties"
+  "propertiesPath":"/usr/local/apache-jmeter-2.13/bin/jmeter.properties",
+  "S3Bucket":"jmeteroutput",
+  ".awsPath":"~/.aws"
 }

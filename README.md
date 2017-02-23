@@ -4,7 +4,11 @@
 ...
 
 ## Todo
-1. s3
+1. s3 / _uploads 
+2. health status
+
+### questions
+1. compress the files before upload to s3?
 
 ### problem:
 
