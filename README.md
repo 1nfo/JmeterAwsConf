@@ -48,6 +48,33 @@ whitelist
 7. make sure things are correct in config.json
 8. ...
 
+### deployment step
+1. update  
+
+		sudo apt-get update  
+		sudo apt-get upgrade
+	
+2. python3.5 is already installed so next pip
+
+		sudo apt-get install python3-pip
+
+3. install packages
+4. 
+		sudo apt-get install python3-paramiko
+		sudo pip3 install boto3 
+		sudo pip3 install awscli
+
+5. upload JAC / .aws / keys
+	
+		scp -i Jmeter_test_key_pair.pem -r ~/Desktop/AWS_TEST/JmeterAwsConf ubuntu@ec2-35-163-234-231.us-west-2.compute.amazonaws.com:~/dev
+		scp -i Jmeter_test_key_pair.pem -r ~/.aws/ ubuntu@ec2-35-163-234-231.us-west-2.compute.amazonaws.com:~/.aws
+		scp -i Jmeter_test_key_pair.pem -r Jmeter_test_key_pair.pem ubuntu@ec2-35-163-234-231.us-west-2.compute.amazonaws.com:~/
+		
+6. sync to local lib
+	
+		rsync -a "--exclude=.*" src/ ~/.local/lib/python3.5/site-packages/JmeterAwsConf
+7. 
+
 #### Tricky things:
 **virtual_env**: always be ware of under which environment you are and if your python package is installed in virtual_env or global env.
 

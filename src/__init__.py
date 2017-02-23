@@ -18,14 +18,14 @@ def source(arg):
 	from inspect import getsource
 	print(getsource(arg))
 
-def demo():
+def demo(path=None):
 	print(source(demo));
 	print('')
 
 
 	TaskName = "dummy"
 	NumberOfSalves = 2
-	UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+	UploadPath = path or "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
 	try:
 		taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
 	except Exception as exception:
