@@ -56,8 +56,7 @@ class InstanceManager(Manager):
         master = [i for i in details if i["Role"]=="Master"]
         self.master = master[0] if master else None
         self.slaves = [i for i in details if i["Role"]=="Slave"]
-        if self.verboseOrNot: 
-            print("Nodes: %d maseter and %d slave(s) under TASK %s"%(1 if self.master else 0,len(self.slaves),self.taskName))
+        self.print("Nodes: %d maseter and %d slave(s) under TASK %s"%(1 if self.master else 0,len(self.slaves),self.taskName))
     
     ## list master/ slaves info
     def listInstances(self):
@@ -66,27 +65,24 @@ class InstanceManager(Manager):
     ## internal use, start instances with given ID list.
     def startInstances(self,IDs,verbose):
         res = self.client.start_instances(InstanceIds=IDs) if IDs else "No instance in the list"
-        if verbose or verbose is None and self.verboseOrNot:
-            print("Start instances:"+str(IDs))
-            print(json.dumps(res,indent=2))
+        self.print("Start instances:" + str(IDs),verbose)
+        self.print(json.dumps(res,indent=2),verbose)
         self.updateInstances()
         return res
     
     ## internal use, stop a list of intances    
     def stopInstances(self,IDs,verbose):
         res = self.client.stop_instances(InstanceIds=IDs) if IDs else "No instance in the list"
-        if verbose or verbose is None and self.verboseOrNot:
-            print("Stop instances:"+str(IDs))
-            print(json.dumps(res,indent=2))
+        self.print("Stop instances:" + str(IDs),verbose)
+        self.print(json.dumps(res,indent=2),verbose)
         self.updateInstances()
         return res
     
     ## internal use, stop a list of instances
     def terminateInstances(self,IDs,verbose):
         res = self.client.terminate_instances(InstanceIds=IDs) if IDs else "No instance in the list"
-        if verbose or verbose is None and self.verboseOrNot:
-            print("Terminate instances:"+str(IDs))
-            print(json.dumps(res,indent=2))
+        self.print("Terminate instances:"+str(IDs),verbose)
+        self.print(json.dumps(res,indent=2),verbose)
         self.updateInstances()
         return res
     
@@ -95,8 +91,7 @@ class InstanceManager(Manager):
         res = self.client.run_instances(ImageId=ImageID,MinCount=num,MaxCount=num,\
                                         InstanceType=InstanceType,SecurityGroups=SecurityGroups, \
                                         Placement = {"AvailabilityZone":area})
-        if verbose or verbose is None and self.verboseOrNot:
-            print(res)
+        self.print(res,verbose)
         return res
 
     def startMaster(self,verbose=None):

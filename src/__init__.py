@@ -3,6 +3,7 @@ import json
 from .Config import AWSConfig, SSHConfig
 from .Manager import InstanceManager, SSHConnectionManager, TaskManager
 from .Connection import SSHConnection
+from .util import Redirector
 
 CONFIG  = json.load(open(__path__[0]+"/config.json"))
 
@@ -19,46 +20,49 @@ def source(arg):
 	print(getsource(arg))
 
 def demo(path=None):
-	print(source(demo));
-	print('')
+	with Redirector() as re:
+		print(source(demo));
+		print('')
 
-
-	TaskName = "dummy"
-	NumberOfSalves = 2
-	UploadPath = path or "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
-	try:
-		taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
-	except Exception as exception:
-		print(exception.args[0])
-		print("Resuming first one: "+exception.args[1][0])
-		taskMngr = TaskManager(TaskName,NumberOfSalves,taskID=exception.args[1][0] ,config=CONFIG)
-	taskMngr.instMngr.mute()
-	taskMngr.connMngr.mute()
-	taskMngr.setUploadDir(UploadPath)
-	#taskMngr.setSlaveNumber(3)
-	taskMngr.setupInstances()
-	if taskMngr.checkStatus():    
-	    taskMngr.refreshConnections()
-	    taskMngr.uploadFiles()
-	    taskMngr.updateRemotehost()
-	    taskMngr.startSlavesServer()
-	    taskMngr.startRDP()
-	    taskMngr.runTest("MonthlyBenchmark_SmokeTest.jmx","ttt.csv")
-	    taskMngr.stopSlavesServer()
+		TaskName = "dummy"
+		NumberOfSalves = 2
+		UploadPath = path or "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+		taskMngr = TaskManager(config=CONFIG)
+		try:
+			taskMngr.startTask(TaskName)
+		except Exception as exception:
+			print(exception.args[0])
+			print("Resuming first one: "+exception.args[1][0])
+			taskMngr.startTask(TaskName,taskID=exception.args[1][0])
+		taskMngr.instMngr.mute()
+		taskMngr.connMngr.mute()
+		taskMngr.setSlaveNumber(NumberOfSalves)
+		taskMngr.setUploadDir(UploadPath)
+		taskMngr.setupInstances()
+		if taskMngr.checkStatus():    
+		    taskMngr.refreshConnections()
+		    taskMngr.uploadFiles()
+		    taskMngr.updateRemotehost()
+		    taskMngr.startSlavesServer()
+		    taskMngr.startRDP()
+		    taskMngr.runTest("smoke.jmx","ttt.csv")
+		    taskMngr.stopSlavesServer()							
 
 def cleanup():
-	print(source(cleanup));
-	print('')
+	with Redirector() as re:
+		print(source(cleanup));
+		print('')
 
-	
-	TaskName = "dummy"
-	NumberOfSalves = 2
-	UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
-	try:
-		taskMngr = TaskManager(TaskName,NumberOfSalves,config=CONFIG)
-	except Exception as exception:
-		print(exception.args[0])
-		print("Resuming first one: "+exception.args[1][0])
-		taskMngr = TaskManager(TaskName,NumberOfSalves,taskID=exception.args[1][0] ,config=CONFIG)
-	taskMngr.instMngr.mute()
-	taskMngr.cleanup()
+		
+		TaskName = "dummy"
+		NumberOfSalves = 2
+		UploadPath = path or "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+		taskMngr = TaskManager(config=CONFIG)
+		try:
+			taskMngr.startTask(TaskName)
+		except Exception as exception:
+			print(exception.args[0])
+			print("Resuming first one: "+exception.args[1][0])
+			taskMngr.startTask(TaskName,taskID=exception.args[1][0])
+		taskMngr.instMngr.mute()
+		taskMngr.cleanup()

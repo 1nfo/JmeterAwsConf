@@ -6,32 +6,32 @@ from ..Connection import SSHConnection
 
 class TaskManager(Manager):
     ## config is from config.json,
+    #  if no task name when initializing, task name need to be set later;
     #  taskID generally is not neccessary, it can be auto generated. 
-    #  UNLESS there is a repeated taskname on AWS are running.
+    #  UNLESS there is at least a repeated taskname running on AWS .
     #  In this case, 
     #    1. you need to specify an existing ID to continue to work on old task.
     #    2. or specify a new id, which is not existed, to start a new task.
-    def __init__(self, taskName, slvNum, taskID=None, config={}):
+    def __init__(self, config={}):
         Manager.__init__(self)
-        if self.verboseOrNot:
-            print("Start task '%s'"%taskName)
         self.config = config
         self.awsConfig = AWSConfig(**config)
         self.instMngr = InstanceManager(self.awsConfig)
-        self.instMngr.setTask(taskName,taskID)
         self.connMngr = SSHConnectionManager()
-        self.slaveNumber = slvNum
+
+    ## set task name to task
+    def startTask(self,taskName,taskID=None):
+        self.print("Start task '%s'"%taskName)
+        self.instMngr.setTask(taskName,taskID)
 
     ## update slave number
     def setSlaveNumber(self,slvNum):
         self.slaveNumber = slvNum
-        if self.verboseOrNot:
-            print("Set slave number: %d"%slvNum)
+        self.print("Set slave number: %d"%slvNum)
 
     ## once slave number is determined, JAC will automatically add or remove nodes
     def setupInstances(self):
-        if self.verboseOrNot:
-            print("Setting up instances")
+        self.print("Setting up instances")
         self.instMngr.addMaster()
         diff = self.slaveNumber-len(self.instMngr.slaves)
         if diff<0 : 
@@ -49,8 +49,7 @@ class TaskManager(Manager):
 
     ## upload the directory to all the nodes, master and slaves
     def uploadFiles(self,verbose=None):
-        if verbose or verbose is None and self.verboseOrNot:
-            print("Uploading files")
+        self.print("Uploading files",verbose)
         li = [i["PublicIp"] for i in self.instMngr.listInstances() if "PublicIp" in i.keys()]
         for ip in li:
             self._uploads(self.UploadPath,ip,self.instMngr.taskName,verbose)
@@ -59,8 +58,7 @@ class TaskManager(Manager):
     def _uploads(self,src,ip,des,verbose):
         strTuple = (self.config["pemFilePath"],src,self.config["username"],ip,des)
         cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s"%strTuple
-        if verbose or verbose is None and self.verboseOrNot:
-            print(cmds)
+        self.print(cmds,verbose)
         os.system(cmds)
         
 
@@ -71,16 +69,14 @@ class TaskManager(Manager):
         while(count<30 and not self.instMngr.allInitialized()):
             time.sleep(10)
             count+=1
-            if self.verboseOrNot:
-                print("Some instances are still initializing")
+            self.print("Some instances are still initializing")
         if self.instMngr.allInitialized(): return True
         return False
 
     ## start lightdm service on master
     #  the master must be lxdm image, where lightdm has installed already.
     def startRDP(self):
-        if self.verboseOrNot:
-            print("Starting lightdm")
+        self.print("Starting lightdm")
         self.connMngr.connectMaster()
         cmd = "sudo service lightdm start"
         self.connMngr.cmdMaster(cmd)
@@ -89,8 +85,7 @@ class TaskManager(Manager):
     ## After instances all set, 
     #  refresh the availiable connections, and update to connection manager   
     def refreshConnections(self):
-        if self.verboseOrNot:
-            print("Refreshing connection list")
+        self.print("Refreshing connection list")
         self.instMngr.updateInstances()
         masterConn = SSHConnection(SSHConfig(hostname = self.instMngr.master["PublicIp"],**self.config))
         slavesConn = {i['InstanceId']:SSHConnection(SSHConfig(hostname = i["PublicIp"],**self.config)) for i in self.instMngr.slaves}
@@ -98,8 +93,7 @@ class TaskManager(Manager):
 
     ## update remote host to jmeter.properties files 
     def updateRemotehost(self):
-        if self.verboseOrNot:
-            print("Updating master remotehost list")
+        self.print("Updating master remotehost list")
         def replaceStr(slaveIPs):
             propertiesFilePath=self.config["propertiesPath"]
             ret = "awk '/^remote_hosts/{gsub(/.+/,"
@@ -118,16 +112,16 @@ class TaskManager(Manager):
     
     ## start jmeter-server, only for running slaves    
     def startSlavesServer(self):
-        if self.verboseOrNot:
-            print("Starting jmeter server in slaves")
+        self.print("Starting jmeter server in slaves")
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("source .profile && cd %s && jmeter-server"%self.instMngr.taskName,verbose=False)
         self.connMngr.closeSlaves()
+        # wait server all started, otherwise master may think task is done.
+        time.sleep(5)
 
     ## stop all slaves' jmeter-server
     def stopSlavesServer(self):
-        if self.verboseOrNot:
-            print("Killing jmeter server in slaves")
+        self.print("Killing jmeter server in slaves")
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("ps aux | grep [j]meter-server | awk '{print $2}' | xargs kill")
         self.connMngr.closeSlaves()
@@ -136,7 +130,6 @@ class TaskManager(Manager):
     #  1. -t jmx, jmx file you want to run under you upload path
     #  2. -l output, the output file name
     def runTest(self,jmx,output):
-        import time
         runJmeterCmd = "source .profile && cd %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,jmx,output)
         uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s"\
                         %(self.instMngr.taskName,output,self.config["S3Bucket"],
@@ -144,8 +137,7 @@ class TaskManager(Manager):
         self.connMngr.connectMaster()
         self.connMngr.cmdMaster(runJmeterCmd,verbose=True)
         self._uploads(self.config[".awsPath"],self.instMngr.master["PublicIp"],".aws",verbose=self.verboseOrNot)
-        if self.verboseOrNot:
-            print("Uploading output csv to AWS S3")
+        self.print("Uploading output csv to AWS S3")
         self.connMngr.cmdMaster(uploadS3Cmd,verbose=self.verboseOrNot)
         # self.connMngr.cmdMaster("source .profile && cd %s && cat %s"%(self.instMngr.taskName,output),verbose=True)
         # self.connMngr.cmdMaster("source .profile && cd %s && cat jmeter.log"%(self.instMngr.taskName),verbose=True)
@@ -153,7 +145,6 @@ class TaskManager(Manager):
 
     ## terminate all nodes
     def cleanup(self):
-        if self.verboseOrNot:
-            print("Terminating All nodes")
+        self.print("Terminating All nodes")
         self.instMngr.terminateMaster()
         self.instMngr.terminateSlaves()
