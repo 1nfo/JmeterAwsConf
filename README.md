@@ -4,7 +4,7 @@
 ...
 
 ## Todo
-1. s3 / _uploads 
+1. task manager documentation 
 2. health status
 
 ### questions
@@ -49,17 +49,17 @@ whitelist
 8. ...
 
 ### deployment step
-1. update  
+1. update[ubuntu only]  
 
 		sudo apt-get update  
 		sudo apt-get upgrade
 	
-2. python3.5 is already installed so next pip
+2. python3.5 is already installed on ec2 instance so next pip
 
 		sudo apt-get install python3-pip
 
 3. install packages
-4. 
+ 
 		sudo apt-get install python3-paramiko
 		sudo pip3 install boto3 
 		sudo pip3 install awscli

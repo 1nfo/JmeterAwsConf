@@ -39,6 +39,7 @@ class TaskManager(Manager):
             self.instMngr.terminateInstances(IDs,self.connMngr.verboseOrNot) 
         elif diff>0:self.instMngr.addSlaves(diff);
         self.instMngr.startAll();
+        self.print("Done.")
 
     ## update the test plan directory you want to upload,
     #  as well as related files like username and passwd csv
@@ -48,17 +49,18 @@ class TaskManager(Manager):
         self.UploadPath = directory
 
     ## upload the directory to all the nodes, master and slaves
-    def uploadFiles(self,verbose=None):
-        self.print("Uploading files",verbose)
+    def uploadFiles(self):
+        self.print("Uploading files")
         li = [i["PublicIp"] for i in self.instMngr.listInstances() if "PublicIp" in i.keys()]
         for ip in li:
-            self._uploads(self.UploadPath,ip,self.instMngr.taskName,verbose)
+            self._uploads(self.UploadPath,ip,self.instMngr.taskName)
+        self.print("Uploaded.")
             
     ## uploads from src to ip:~/des
-    def _uploads(self,src,ip,des,verbose):
+    def _uploads(self,src,ip,des):
         strTuple = (self.config["pemFilePath"],src,self.config["username"],ip,des)
         cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s"%strTuple
-        self.print(cmds,verbose)
+        self.print("%s >>> %s:%s"%(src,ip,des))
         os.system(cmds)
         
 
@@ -90,6 +92,7 @@ class TaskManager(Manager):
         masterConn = SSHConnection(SSHConfig(hostname = self.instMngr.master["PublicIp"],**self.config))
         slavesConn = {i['InstanceId']:SSHConnection(SSHConfig(hostname = i["PublicIp"],**self.config)) for i in self.instMngr.slaves}
         self.connMngr.updateConnections(masterConn,slavesConn)
+        self.print("Refreshed.")
 
     ## update remote host to jmeter.properties files 
     def updateRemotehost(self):
@@ -109,6 +112,7 @@ class TaskManager(Manager):
         cmd = replaceStr([i["PrivateIpAddress"] for i in self.instMngr.slaves])
         self.connMngr.cmdMaster(cmd)
         self.connMngr.closeMaster()
+        self.print("Updated.")
     
     ## start jmeter-server, only for running slaves    
     def startSlavesServer(self):
@@ -118,6 +122,7 @@ class TaskManager(Manager):
         self.connMngr.closeSlaves()
         # wait server all started, otherwise master may think task is done.
         time.sleep(5)
+        self.print("Started.")
 
     ## stop all slaves' jmeter-server
     def stopSlavesServer(self):
@@ -125,26 +130,30 @@ class TaskManager(Manager):
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("ps aux | grep [j]meter-server | awk '{print $2}' | xargs kill")
         self.connMngr.closeSlaves()
+        self.print("Slaves down.")
 
     ## run jmeter with args 
     #  1. -t jmx, jmx file you want to run under you upload path
     #  2. -l output, the output file name
     def runTest(self,jmx,output):
+        self.print("running test now ...")
         runJmeterCmd = "source .profile && cd %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,jmx,output)
         uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s"\
                         %(self.instMngr.taskName,output,self.config["S3Bucket"],
                           self.instMngr.taskID,time.ctime().replace(" ","_"), self.config["profile_name"])
         self.connMngr.connectMaster()
         self.connMngr.cmdMaster(runJmeterCmd,verbose=True)
-        self._uploads(self.config[".awsPath"],self.instMngr.master["PublicIp"],".aws",verbose=self.verboseOrNot)
-        self.print("Uploading output csv to AWS S3")
+        self._uploads(self.config[".awsPath"],self.instMngr.master["PublicIp"],".aws")
+        self.print("Done.\nUploading output csv to AWS S3")
         self.connMngr.cmdMaster(uploadS3Cmd,verbose=self.verboseOrNot)
         # self.connMngr.cmdMaster("source .profile && cd %s && cat %s"%(self.instMngr.taskName,output),verbose=True)
         # self.connMngr.cmdMaster("source .profile && cd %s && cat jmeter.log"%(self.instMngr.taskName),verbose=True)
         self.connMngr.closeMaster()
+        self.print("Uploaded.")
 
     ## terminate all nodes
     def cleanup(self):
         self.print("Terminating All nodes")
         self.instMngr.terminateMaster()
         self.instMngr.terminateSlaves()
+        self.print("Terminated.")
