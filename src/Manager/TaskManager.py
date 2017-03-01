@@ -21,8 +21,8 @@ class TaskManager(Manager):
 
     ## set task name to task
     def startTask(self,taskName,taskID=None):
-        self.print("Start task '%s'"%taskName)
         self.instMngr.setTask(taskName,taskID)
+        self.print("Start task '%s'"%taskName)
 
     ## update slave number
     def setSlaveNumber(self,slvNum):

@@ -3,8 +3,8 @@ from .Manager import Manager
 ## connect to cluster by ssh and execute commands       
 class SSHConnectionManager(Manager):
     def __init__(self,masterConn=None,slavesConn={}):
+        Manager.__init__(self)
         self.updateConnections(masterConn,slavesConn)
-        self.verboseOrNot = True
     
     ## every times master / slave public ip changed,
     #  the connection config need to be updated

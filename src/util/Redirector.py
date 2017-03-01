@@ -1,8 +1,9 @@
 import sys,io
 
 class Redirector:
-	def __init__(self):
-		self.buff = io.StringIO()
+	def __init__(self,buffer=io.StringIO(),pauseFunc=None):
+		self.buff = buffer
+		self.pauseFunc = pauseFunc
 		
 	def __enter__(self):
 		self.stdout = sys.stdout
@@ -12,16 +13,16 @@ class Redirector:
 	def __exit__(self,*arg):
 		sys.stdout = self.stdout
 
-	def write(self,stdin):
-		self.stdout.write(stdin)
-		self.buff.write(stdin)	
+	def write(self,output):
+		for i in output:
+			self.stdout.write(i)
+			self.buff.write(i)
+			if self.pauseFunc: self.pauseFunc()	
 
 	def flush(self):
-		ret =  self.buff.getvalue()
-		self.buff.close()
-		self.stdout.write("buffer closed!")
-		self.buff=io.StringIO()
-		self.stdout.write(self.buff.getvalue())
+		ret = self.buff.getvalue()
+		self.buff.seek(0)
+		self.buff.truncate(0)
 		return ret
 
 ## test

@@ -15,6 +15,6 @@ class Manager(object):
     def verbose(self):
         self.verboseOrNot = True
 
-    def print(self,stdin,verbose=None):
+    def print(self,output,verbose=None):
         if verbose or verbose is None and self.verboseOrNot:
-            print(stdin);
+                print(output)
