@@ -39,7 +39,7 @@ class TaskManager(Manager):
             self.instMngr.terminateInstances(IDs,self.connMngr.verboseOrNot) 
         elif diff>0:self.instMngr.addSlaves(diff);
         self.instMngr.startAll();
-        self.print("Done.")
+        self.print("Instances are initializing")
 
     ## update the test plan directory you want to upload,
     #  as well as related files like username and passwd csv
@@ -68,10 +68,10 @@ class TaskManager(Manager):
     #  will be time-out after 5 mins    
     def checkStatus(self):
         count=0
-        while(count<30 and not self.instMngr.allInitialized()):
-            time.sleep(10)
+        while(count<20 and not self.instMngr.allInitialized()):
             count+=1
             self.print("Some instances are still initializing")
+            time.sleep(15)
         if self.instMngr.allInitialized(): return True
         return False
 
