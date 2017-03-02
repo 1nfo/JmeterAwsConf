@@ -1,10 +1,8 @@
 import json
 from boto3 import Session
-from ..Parser import DescribeInstancesParser,TAG_ROLE as _TAG_ROLE_
+from ..Parser import *
 from .Manager import Manager
-    
-_TAG_TASKID_ = "__JAC_TaskID__"
-_TAG_TASKNAME_ = "__JAC_Name__"
+
 
 ## instance manager is responsible to provide wrapped API from SDK
 #  to control master and slaves' lifecycle
@@ -32,8 +30,11 @@ class InstanceManager(Manager):
         self.updateInstances()
 
     ## get TaskID set within JAC node on aws
-    def getDupTaskIds(self,taskName):
-        filter_cond = [{"Name":"tag:"+_TAG_TASKNAME_,"Values":[taskName]}]
+    def getDupTaskIds(self,taskName=None):
+        if taskName:
+            filter_cond = [{TAG_NAME:"tag:"+TAG_TASKNAME,"Values":[taskName]}]
+        else:
+            filter_cond = [{TAG_NAME:"tag:"+TAG_ROLE,"Values":["Master"]}]
         self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
         return self.descParser.listTaskIDs()
     
@@ -50,7 +51,7 @@ class InstanceManager(Manager):
     
     ## requests describe instances and updates master/slaves information    
     def updateInstances(self):
-        filter_cond = [{"Name":"tag:"+_TAG_TASKID_,"Values":[self.taskID]}]
+        filter_cond = [{TAG_NAME:"tag:"+TAG_TASKID,"Values":[self.taskID]}]
         self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
         details = self.descParser.listDetails();
         master = [i for i in details if i["Role"]=="Master"]
@@ -60,6 +61,8 @@ class InstanceManager(Manager):
     
     ## list master/ slaves info
     def listInstances(self):
+        filter_cond = [{TAG_NAME:"tag:"+TAG_TASKID,"Values":[self.taskID]}]
+        self.descParser.setResponse(self.client.describe_instances(Filters = filter_cond))
         return self.descParser.listDetails()
     
     ## internal use, start instances with given ID list.
@@ -133,7 +136,7 @@ class InstanceManager(Manager):
             instType = self.config.instType["master"] if not instType else instType
             res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose)
             ID = res['Instances'][0]["InstanceId"]
-            self.client.create_tags(Resources = [ID], Tags = [{'Key': "Name", 'Value': 'JAC_NODE'},{'Key': _TAG_ROLE_, 'Value': 'Master'},{'Key':_TAG_TASKNAME_,"Value":self.taskName},{'Key':_TAG_TASKID_,"Value":self.taskID}])  
+            self.client.create_tags(Resources = [ID], Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME},{'Key': TAG_ROLE, 'Value': 'Master'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}])  
             self.updateInstances()
             return ID
         else :return "Running Master, Terminate it before lanuch a new one"
@@ -146,6 +149,6 @@ class InstanceManager(Manager):
         instType = self.config.instType["slave"] if not instType else instType
         res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
-        self.client.create_tags(Resources = IDs, Tags = [{'Key': "Name", 'Value': 'JAC_NODE'},{'Key': _TAG_ROLE_, 'Value': 'Slave'},{'Key':_TAG_TASKNAME_,"Value":self.taskName},{'Key':_TAG_TASKID_,"Value":self.taskID}]) 
+        self.client.create_tags(Resources = IDs, Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME},{'Key': TAG_ROLE, 'Value': 'Slave'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}]) 
         self.updateInstances()
         return IDs

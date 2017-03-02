@@ -1,6 +1,11 @@
 from .ResponseParser import *
-
+    
+TAG_TASKID = "__JAC_TaskID__"
+TAG_TASKNAME = "__JAC_Name__"
+TAG_NAME = "Name"
+TAGVAL_NAME = "JAC_NODE"
 TAG_ROLE = "__JAC_ROLE__"
+
 
 ## responsilble for parsing describe instances response
 class DescribeInstancesParser(ResponseParser):
@@ -46,7 +51,7 @@ class DescribeInstancesParser(ResponseParser):
     
     def _getTaskIDs(self,i):
         for j in i:
-            if j["Key"]=="__JAC_TaskID__": return j["Value"]
+            if j["Key"]==TAG_TASKID: return j["Value"]
 
     def listTaskIDs(self):
         instances = []
