@@ -4,8 +4,10 @@
 ...
 
 ## Todo
+0. config.json absolute path?
 1. task manager documentation 
 2. health status
+
 
 ### questions
 1. compress the files before upload to s3?

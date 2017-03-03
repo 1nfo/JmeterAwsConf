@@ -31,7 +31,7 @@ class TaskManager(Manager):
 
     ## once slave number is determined, JAC will automatically add or remove nodes
     def setupInstances(self):
-        self.print("Setting up instances")
+        self.print("Launching instances")
         self.instMngr.addMaster()
         diff = self.slaveNumber-len(self.instMngr.slaves)
         if diff<0 : 
@@ -39,7 +39,7 @@ class TaskManager(Manager):
             self.instMngr.terminateInstances(IDs,self.connMngr.verboseOrNot) 
         elif diff>0:self.instMngr.addSlaves(diff);
         self.instMngr.startAll();
-        self.print("Instances are initializing")
+        self.print("Launched.")
 
     ## update the test plan directory you want to upload,
     #  as well as related files like username and passwd csv
@@ -130,7 +130,7 @@ class TaskManager(Manager):
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("ps aux | grep [j]meter-server | awk '{print $2}' | xargs kill")
         self.connMngr.closeSlaves()
-        self.print("Slaves down.")
+        self.print("Slave Servers down.")
 
     ## run jmeter with args 
     #  1. -t jmx, jmx file you want to run under you upload path
