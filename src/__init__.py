@@ -1,4 +1,4 @@
-import json
+import json,os
 
 from .Config import AWSConfig, SSHConfig
 from .Manager import InstanceManager, SSHConnectionManager, TaskManager
@@ -6,6 +6,7 @@ from .Connection import SSHConnection
 from .util import Redirector
 
 CONFIG  = json.load(open(__path__[0]+"/config.json"))
+CONFIG["pemFilePath"] = CONFIG["pemFilePath"].replace("~",os.path.expanduser('~'))
 
 # def insttest():
 # 	instMngr = InstanceManager(AWSConfig(**CONFIG))

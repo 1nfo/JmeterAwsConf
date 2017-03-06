@@ -1,21 +1,21 @@
 {
-  "profile_name": "admin_in_test",
-  "region": "us-west-2",
-  "zone": "us-west-2a",
-  "pemFilePath": "/Users/shilzhao/Jmeter_test_key_pair.pem",
-  "security_groups": [
-    "Jmeter_test_group"
-  ],
   "InstType": {
     "master": "t2.micro",
     "slave": "t2.micro"
   },
+  ".awsPath":"~/.aws",
+  "pemFilePath": "~/Jmeter_test_key_pair.pem",
+  "profile_name": "admin_in_test",
+  "region": "us-west-2",
+  "zone": "us-west-2a",
+  "security_groups": [
+    "Jmeter_test_group"
+  ],
   "username": "ubuntu",
   "ami": {
     "basic" : "ami-42ab2b22",
     "LXDM" : "ami-f87bfb98"
   },
   "propertiesPath":"/usr/local/apache-jmeter-2.13/bin/jmeter.properties",
-  "S3Bucket":"jmeteroutput",
-  ".awsPath":"~/.aws"
+  "S3Bucket":"jmeteroutput"
 }
