@@ -6,12 +6,12 @@ class Redirector:
 		self.pauseFunc = pauseFunc
 		
 	def __enter__(self):
-		self.stdout = sys.stdout
+		self.stdout = sys.__stdout__
 		sys.stdout = self
 		return self
 
 	def __exit__(self,*arg):
-		sys.stdout = self.stdout
+		sys.stdout = sys.__stdout__
 
 	def write(self,output):
 		for i in output:
