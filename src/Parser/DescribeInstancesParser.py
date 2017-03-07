@@ -1,9 +1,9 @@
 from .ResponseParser import *
     
-TAG_TASKID = "__JAC_TaskID__"
-TAG_TASKNAME = "__JAC_Name__"
+TAG_TASKID = "__JAC_TASKID__"
+TAG_TASKNAME = "__JAC_TASKNAME__"
 TAG_NAME = "Name"
-TAGVAL_NAME = "JAC_NODE"
+TAGVAL_NAME = "JAC_"
 TAG_ROLE = "__JAC_ROLE__"
 
 

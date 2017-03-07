@@ -136,7 +136,7 @@ class InstanceManager(Manager):
             instType = self.config.instType["master"] if not instType else instType
             res = self.creatInstances(imageID,1,instType,self.config.securityGroups,self.config.zone,verbose)
             ID = res['Instances'][0]["InstanceId"]
-            self.client.create_tags(Resources = [ID], Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME},{'Key': TAG_ROLE, 'Value': 'Master'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}])  
+            self.client.create_tags(Resources = [ID], Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME+self.taskName},{'Key': TAG_ROLE, 'Value': 'Master'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}])  
             self.updateInstances()
             return ID
         else :return "Running Master, Terminate it before lanuch a new one"
@@ -149,6 +149,6 @@ class InstanceManager(Manager):
         instType = self.config.instType["slave"] if not instType else instType
         res = self.creatInstances(imageID,num,instType,self.config.securityGroups,self.config.zone,verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
-        self.client.create_tags(Resources = IDs, Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME},{'Key': TAG_ROLE, 'Value': 'Slave'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}]) 
+        self.client.create_tags(Resources = IDs, Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME+self.taskName},{'Key': TAG_ROLE, 'Value': 'Slave'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}]) 
         self.updateInstances()
         return IDs

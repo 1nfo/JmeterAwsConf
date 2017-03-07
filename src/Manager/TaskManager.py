@@ -21,9 +21,9 @@ class TaskManager(Manager):
 
     ## set task name to task
     def startTask(self,taskName,taskID=None):
-        self.instMngr.setTask(taskName,taskID)
         self.print("Start task '%s'"%taskName)
-
+        self.instMngr.setTask(taskName,taskID)
+        
     ## update slave number
     def setSlaveNumber(self,slvNum):
         self.slaveNumber = slvNum
@@ -137,7 +137,7 @@ class TaskManager(Manager):
     #  2. -l output, the output file name
     def runTest(self,jmx,output):
         self.print("running test now ...")
-        runJmeterCmd = "source .profile && cd %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,jmx,output)
+        runJmeterCmd = "source .profile && cd %s && rm %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,output,jmx,output)
         uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s"\
                         %(self.instMngr.taskName,output,self.config["S3Bucket"],
                           self.instMngr.taskID,time.ctime().replace(" ","_"), self.config["profile_name"])
