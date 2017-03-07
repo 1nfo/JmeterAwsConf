@@ -125,12 +125,12 @@ class TaskManager(Manager):
         self.print("Started.")
 
     ## stop all slaves' jmeter-server
-    def stopSlavesServer(self):
-        self.print("Killing jmeter server in slaves")
+    def stopSlavesServer(self,verbose=None):
+        self.print("Killing jmeter server in slaves",verbose)
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("ps aux | grep [j]meter-server | awk '{print $2}' | xargs kill")
         self.connMngr.closeSlaves()
-        self.print("Slave Servers down.")
+        self.print("Slave Servers down.",verbose)
 
     ## run jmeter with args 
     #  1. -t jmx, jmx file you want to run under you upload path
