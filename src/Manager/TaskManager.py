@@ -137,7 +137,7 @@ class TaskManager(Manager):
     #  2. -l output, the output file name
     def runTest(self,jmx,output):
         self.print("running test now ...")
-        runJmeterCmd = "source .profile && cd %s && rm %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,output,jmx,output)
+        runJmeterCmd = "source .profile && cd %s && echo "" > %s && jmeter -n -t %s -r -l %s"%(self.instMngr.taskName,output,jmx,output)
         uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s"\
                         %(self.instMngr.taskName,output,self.config["S3Bucket"],
                           self.instMngr.taskID,time.ctime().replace(" ","_"), self.config["profile_name"])
