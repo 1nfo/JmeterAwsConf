@@ -17,12 +17,12 @@ class Redirector:
 		for i in output:
 			self.stdout.write(i)
 			self.buff.write(i)
-			if self.pauseFunc: self.pauseFunc()	
+		if self.pauseFunc: self.pauseFunc()	
 
 	def flush(self):
 		ret = self.buff.getvalue()
-		self.buff.seek(0)
-		self.buff.truncate(0)
+		self.buff.close()
+		self.buff=io.StringIO()
 		return ret
 
 ## test
