@@ -21,8 +21,7 @@ class InstanceManager(Manager):
             if len(res)>0:
                 msg = "Found multiple tasks named %s"%taskName
                 li = res
-                msg2 = "Specified one of above taskIDs and continue, or try a new task name"
-                raise Exception(msg,res,msg2)  
+                raise DupTaskException(msg,res)  
         self.taskName = taskName
         self.taskID = taskID if taskID else res[0] if res else self._genID(taskName)
         self.master = None
@@ -152,3 +151,6 @@ class InstanceManager(Manager):
         self.client.create_tags(Resources = IDs, Tags = [{'Key': TAG_NAME, 'Value': TAGVAL_NAME+self.taskName},{'Key': TAG_ROLE, 'Value': 'Slave'},{'Key':TAG_TASKNAME,"Value":self.taskName},{'Key':TAG_TASKID,"Value":self.taskID}]) 
         self.updateInstances()
         return IDs
+
+class DupTaskException(Exception):
+    pass

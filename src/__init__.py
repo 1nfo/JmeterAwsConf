@@ -1,7 +1,7 @@
 import json,os
 
 from .Config import AWSConfig, SSHConfig
-from .Manager import InstanceManager, SSHConnectionManager, TaskManager
+from .Manager import InstanceManager, SSHConnectionManager, TaskManager, DupTaskException
 from .Connection import SSHConnection
 from .util import Redirector
 

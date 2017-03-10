@@ -86,13 +86,13 @@ class TaskManager(Manager):
     
     ## After instances all set, 
     #  refresh the availiable connections, and update to connection manager   
-    def refreshConnections(self):
-        self.print("Refreshing connection list")
+    def refreshConnections(self,verbose=None):
+        self.print("Refreshing connection list",verbose=verbose)
         self.instMngr.updateInstances()
         masterConn = SSHConnection(SSHConfig(hostname = self.instMngr.master["PublicIp"],**self.config))
         slavesConn = {i['InstanceId']:SSHConnection(SSHConfig(hostname = i["PublicIp"],**self.config)) for i in self.instMngr.slaves}
         self.connMngr.updateConnections(masterConn,slavesConn)
-        self.print("Refreshed.")
+        self.print("Refreshed.",verbose=verbose)
 
     ## update remote host to jmeter.properties files 
     def updateRemotehost(self):
