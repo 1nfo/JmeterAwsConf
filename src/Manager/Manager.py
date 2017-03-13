@@ -3,6 +3,7 @@
 
 from ..Util import Verboser
 
+
 class Manager(Verboser):
     def __init__(self):
         Verboser.__init__(self)
