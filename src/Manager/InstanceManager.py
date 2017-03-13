@@ -13,15 +13,18 @@ class InstanceManager(Manager):
         self.config = config
         self.client = Session(profile_name=config.profile_name,region_name=config.region).client('ec2')
         self.descParser = DescribeInstancesParser()
+        self.taskName = ""
+        self.taskID = ""
+        self.master = None
+        self.slaves = []
     
     ## set task name and id    
     def setTask(self,taskName,taskID):
         if(taskName and taskID is None):
             res = self.getDupTaskIds(taskName)
             if len(res)>0:
-                msg = "Found multiple tasks named %s"%taskName
-                li = res
-                raise DupTaskException(msg,res)  
+                msg = "Found multiple tasks named %s, please try a new name or resume."%taskName
+                raise DupTaskException(msg)  
         self.taskName = taskName
         self.taskID = taskID if taskID else res[0] if res else self._genID(taskName)
         self.master = None
