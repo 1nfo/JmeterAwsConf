@@ -10,6 +10,6 @@ class Verboser(object):
     def verbose(self):
         self.verboseOrNot = True
 
-    def print(self,output,verbose=None):
+    def print(self,output,end="\n",verbose=None):
         if verbose or verbose is None and self.verboseOrNot:
-            print(output)
+            print(output,end=end)

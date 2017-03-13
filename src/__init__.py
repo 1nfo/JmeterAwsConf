@@ -3,7 +3,7 @@ import json,os
 from .Config import AWSConfig, SSHConfig
 from .Manager import InstanceManager, SSHConnectionManager, TaskManager, DupTaskException
 from .Connection import SSHConnection
-from .util import Redirector
+from .Util import Redirector
 
 CONFIG  = json.load(open(__path__[0]+"/config.json"))
 CONFIG["pemFilePath"] = CONFIG["pemFilePath"].replace("~",os.path.expanduser('~'))

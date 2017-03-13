@@ -14,9 +14,8 @@ class Redirector:
 		sys.stdout = sys.__stdout__
 
 	def write(self,output):
-		for i in output:
-			self.stdout.write(i)
-			self.buff.write(i)
+		self.stdout.write(output)
+		self.buff.write(output)
 		if self.pauseFunc: self.pauseFunc()	
 
 	def flush(self):
