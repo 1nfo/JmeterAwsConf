@@ -1,6 +1,8 @@
 from ..Manager import *
 from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
+import os
+import time
 
 
 class TaskManager(Manager):
@@ -37,8 +39,8 @@ class TaskManager(Manager):
             IDs = [i["InstanceId"] for i in self.instMngr.slaves[self.slaveNumber:]]
             self.instMngr.terminateInstances(IDs, self.connMngr.verboseOrNot)
         elif diff > 0:
-            self.instMngr.addSlaves(diff);
-        self.instMngr.startAll();
+            self.instMngr.addSlaves(diff)
+        self.instMngr.startAll()
         self.print("Launched.")
 
     #  update the test plan directory you want to upload,
