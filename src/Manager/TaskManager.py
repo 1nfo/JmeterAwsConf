@@ -3,21 +3,21 @@ from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
 import os
 import time
+from copy import deepcopy
 
 
 class TaskManager(Manager):
     #  config is from config.json,
     #  if no task name when initializing, task name need to be set later;
-    #  taskID generally is not neccessary, it can be auto generated. 
+    #  taskID generally is not neccessary, it can be auto generated.
     #  UNLESS there is at least a repeated taskname running on AWS .
-    #  In this case, 
+    #  In this case,
     #    1. you need to specify an existing ID to continue to work on old task.
     #    2. or specify a new id, which is not existed, to start a new task.
     def __init__(self, config={}):
         Manager.__init__(self)
-        self.config = config
-        self.awsConfig = AWSConfig(**config)
-        self.instMngr = InstanceManager(self.awsConfig)
+        self.config = deepcopy(config)
+        self.instMngr = InstanceManager(AWSConfig(**config))
         self.connMngr = SSHConnectionManager()
 
     #  set task name to task
@@ -66,7 +66,7 @@ class TaskManager(Manager):
         os.system(cmds)
 
     #  repeatedly check if all node under current task is ready to connection
-    #  will be time-out after 5 mins    
+    #  will be time-out after 5 mins
     def checkStatus(self):
         count = 0
         while (count < 20 and not self.instMngr.allInitialized()):
@@ -86,7 +86,7 @@ class TaskManager(Manager):
         self.connMngr.closeMaster()
 
     #  After instances all set,
-    #  refresh the availiable connections, and update to connection manager   
+    #  refresh the availiable connections, and update to connection manager
     def refreshConnections(self, verbose=None):
         self.print("Refreshing connection list", verbose=verbose)
         self.instMngr.updateInstances()
