@@ -54,6 +54,12 @@ class TaskManager(Manager):
 
     #  upload the directory to all the nodes, master and slaves
     def uploadFiles(self):
+        # # make sure every jmx save output as xml
+        # for jmxPath in os.listdir(self.UploadPath):
+        #     if jmxPath.endswith(".jmx"):
+        #         jmx = JMX("%s/%s"%(self.UploadPath,jmxPath))
+        #         if not jmx.isSaveAsXML():
+        #             jmx.saveXMLasTrue()
         self.print("Uploading files")
         li = [i["PublicIp"] for i in self.instMngr.listInstances() if "PublicIp" in i.keys()]
         for ip in li:
@@ -149,22 +155,27 @@ class TaskManager(Manager):
     #  run jmeter with args
     #  1. -t jmx, jmx file you want to run under you upload path
     #  2. -l output, the output file name
-    def runTest(self, jmx, output):
+    def runTest(self, jmx):
         self.print("running test now ...")
-        runJmeterCmd = "source .profile && cd %s && echo "" > %s && jmeter -n -t %s -r -l %s" % (
-        self.instMngr.taskName, output, jmx, output)
+        # logstash conf files
+        jmxParser = JMXParser(JMX("%s/%s"%(self.UploadPath,jmx)))
+        output = jmxParser.getOutputFilename()
+        mergedOutput = "merged.csv"
+        confFile = jmxParser.getConf("/home/ubuntu/"+mergedOutput,self.instMngr.taskID,self.config["es_IP"]);
+        confCmd = 'source .profile && echo \'%s\' > .tmpConf && sudo mv .tmpConf %s/jmeterlog.conf'%(
+            confFile,self.config["logstash_conf_dir"])
+        runJmeterCmd = "source .profile && cd %s && echo "" > %s && jmeter -n -t %s -r " % (
+            self.instMngr.taskName, output, jmx) # -l output.csv is not the result we want.
+        awkCmd = '''awk -v RS='"' 'NR % 2 == 0 {{ gsub(/\\n/, "") }} {{ printf("%s%s", $0, RT) }}' {0}/{1} >> {2}'''.format(
+            self.instMngr.taskName,output,mergedOutput)
         # uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s" \
         #               % (self.instMngr.taskName, output, self.config["S3Bucket"],
         #                  self.instMngr.taskID, time.ctime().replace(" ", "_"), self.config["profile_name"])
-
-        # logstash conf files
-        jmxParser = JMXParser(JMX("%s/%s"%(self.UploadPath,jmx)))
-        confFile = jmxParser.getConf(self.instMngr.taskID,"/home/ubuntu/"+self.instMngr.taskName+"/"+output,self.config["es_IP"]);
-        confCmd = 'source .profile && echo \'%s\' > .tmpConf && sudo mv .tmpConf %s/jmeterlog.conf'%(confFile,self.config["logstash_conf_dir"])
         self.connMngr.connectMaster()
-        self.connMngr.cmdMaster(confCmd);
+        self.connMngr.cmdMaster(confCmd)
         self.connMngr.cmdMaster("sudo systemctl restart logstash.service")
         self.connMngr.cmdMaster(runJmeterCmd, verbose=True)
+        self.connMngr.cmdMaster(awkCmd)
         #self.print("Test done.\nUploading output csv to AWS S3")
         # s3 uploads
         # self._uploads(self.config[".awsPath"], self.instMngr.master["PublicIp"], ".aws")

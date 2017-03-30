@@ -28,9 +28,12 @@ class JMXParser(object):
                 cols+=self.mapping[i]
         return cols
 
-    def getConf(self,taskID,filePath,esIP):
-        ret = r"""
-input{
+
+    def getOutputFilename(self):
+        return self.jmx.outputFilename
+
+    def getConf(self,csv,taskID,esIP):
+        ret = r"""input{
   file{
     path => "%s"
     start_position => "beginning"
@@ -48,6 +51,8 @@ filter{
     mutate{
         remove_field => [ "message" ]
     }
+    if [success] == "true"{ mutate { add_field => {"successRate" => 1 }} }
+    else { mutate { add_field => {"successRate" => 0 }} }
 }
 output{
     stdout {codec => rubydebug}
@@ -55,5 +60,5 @@ output{
         hosts => "%s"
     }
 }
-"""%(filePath,taskID,str(self._getCols()).replace("'","\""),esIP)
+"""%(csv,taskID,str(self._getCols()).replace("'","\""),esIP)
         return ret

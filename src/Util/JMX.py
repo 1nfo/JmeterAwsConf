@@ -4,14 +4,29 @@ import json
 
 class JMX(object):
     def __init__(self,path):
-        self.sumReport = self._getSumReport(path)
+        self.path = path
+        self.jmx = ET.parse(path)
+        self.resCollector = self._getResCollector()
+        self.sumReport = self._getSumReport()
+        self.outputFilename = self._getOutputFilename()
 
-    def _getSumReport(self, path):
+    def _getResCollector(self):
+        return self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]')
+
+    def _getOutputFilename(self):
+        return self.resCollector.find('.//stringProp[@name="filename"]').text
+
+    def _getSumReport(self):
         def transfer(i):
             if i=="true": return True
             elif i=="false": return False
             else: return eval(i)
-        jmx = ET.parse(path)
-        children = jmx.findall('.//ResultCollector[@guiclass="SummaryReport"]')[0].find(".//value").getchildren()
+        children = self.resCollector.find('.//value[@class="SampleSaveConfiguration"]').getchildren()
         return {c.tag:transfer(c.text) for c in children }
 
+    def isSaveAsXML(self):
+        return self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]//value[@class="SampleSaveConfiguration"]//xml').text=="true"
+
+    def saveXMLasTrue(self):
+        self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]//value[@class="SampleSaveConfiguration"]//xml').text = "true"
+        self.jmx.write(self.path)
