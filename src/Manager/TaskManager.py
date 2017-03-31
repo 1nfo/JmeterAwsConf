@@ -74,7 +74,7 @@ class TaskManager(Manager):
     def _uploads(self, src, ip, des):
         strTuple = (self.config["pemFilePath"], src, self.config["username"], ip, des)
         cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s" % strTuple
-        self.print("%s >>> %s:%s" % (src, ip, des))
+        self.print("  --> slave, IP: %s"%ip)
         os.system(cmds)
 
     #  repeatedly check if all node under current task is ready to connection
@@ -83,7 +83,7 @@ class TaskManager(Manager):
         count = 0
         while (count < 20 and not self.instMngr.allInitialized()):
             count += 1
-            self.print("Some instances are still initializing")
+            self.print("Some instances are initializing")
             time.sleep(15)
         if self.instMngr.allInitialized(): return True
         return False
@@ -160,7 +160,7 @@ class TaskManager(Manager):
     #  1. -t jmx, jmx file you want to run under you upload path
     #  2. -l output, the output file name
     def runTest(self, jmx):
-        self.print("running test now ...")
+        self.print("\nrunning test now ...")
         # logstash conf files
         jmxParser = JMXParser(JMX("%s/%s"%(self.UploadPath,jmx)))
         output = jmxParser.getOutputFilename()
@@ -194,3 +194,9 @@ class TaskManager(Manager):
         self.instMngr.terminateMaster()
         self.instMngr.terminateSlaves()
         self.print("Terminated.")
+
+    def esCheck(self):
+        self.print("Checking elasticsearch connection")
+        self.connMngr.connectMaster()
+        self.connMngr.cmdMaster("nc -zv %s %s"%tuple(self.config["es_IP"].split(":")),verbose=True)
+        self.connMngr.closeMaster()
