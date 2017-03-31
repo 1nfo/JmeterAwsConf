@@ -15,6 +15,7 @@ class InstanceManager(Manager):
         self.descParser = DescribeInstancesParser()
         self.taskName = ""
         self.taskID = ""
+        self.taskDesc = ""
         self.master = None
         self.slaves = []
 
@@ -30,6 +31,17 @@ class InstanceManager(Manager):
         self.master = None
         self.slaves = []
         self.updateInstances()
+
+    # set task description
+    def setTaskDesc(self, desc):
+        self.taskDesc = desc
+
+    # get task descrition tag
+    def getTaskDesc(self):
+        filter_cond = [{TAG_NAME: "tag:" + TAG_TASKID, "Values": [self.taskID]},{TAG_NAME: "tag:" + TAG_ROLE, "Values": ["Master"]}]
+        self.descParser.setResponse(self.client.describe_instances(Filters=filter_cond))
+        self.taskDesc = self.descParser.getTaskDesc()
+        return self.taskDesc
 
     # get TaskID set within JAC node on aws
     def getDupTaskIds(self, taskName=None):
@@ -143,7 +155,8 @@ class InstanceManager(Manager):
             self.client.create_tags(Resources=[ID], Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.taskName},
                                                           {'Key': TAG_ROLE, 'Value': 'Master'},
                                                           {'Key': TAG_TASKNAME, "Value": self.taskName},
-                                                          {'Key': TAG_TASKID, "Value": self.taskID}])
+                                                          {'Key': TAG_TASKID, "Value": self.taskID},
+                                                          {'Key': TAG_TASKDESC, "Value": self.taskDesc}])
             self.updateInstances()
             return ID
         else:
@@ -151,7 +164,7 @@ class InstanceManager(Manager):
 
     # create a number of slaves
     #  by default image is basic which only have jmeter and java installed
-    #  then tag this node with "name":"Slave" 
+    #  then tag this node with "name":"Slave"
     def addSlaves(self, num, LXDM=False, instType=None, verbose=None):
         imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
         instType = self.config.instType["slave"] if not instType else instType

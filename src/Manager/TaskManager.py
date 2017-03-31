@@ -27,6 +27,10 @@ class TaskManager(Manager):
         self.print("Start task '%s'" % taskName)
         self.instMngr.setTask(taskName, taskID)
 
+    #  set description
+    def setTaskDesc(self,desc):
+        self.instMngr.setTaskDesc(desc)
+
     #  update slave number
     def setSlaveNumber(self, slvNum):
         self.slaveNumber = slvNum
