@@ -1,7 +1,7 @@
 from ..Manager import *
 from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
-from ..Util import JMX
+from ..Util import JMX, Redirector
 from ..Parser import JMXParser
 import os
 import time
@@ -16,14 +16,18 @@ class TaskManager(Manager):
     #  In this case,
     #    1. you need to specify an existing ID to continue to work on old task.
     #    2. or specify a new id, which is not existed, to start a new task.
-    def __init__(self, config={}):
+    def __init__(self, pauseFunc=None, sid=None):
         Manager.__init__(self)
+        self.redirector = Redirector(pauseFunc=pauseFunc)
+        self.sid = sid
+
+    def setConfig(self, config):
         self.config = deepcopy(config)
-        self.instMngr = InstanceManager(AWSConfig(**config))
-        self.connMngr = SSHConnectionManager()
 
     #  set task name to task
     def startTask(self, taskName, taskID=None):
+        self.instMngr = InstanceManager(AWSConfig(**self.config))
+        self.connMngr = SSHConnectionManager()
         self.print("Start task '%s'" % taskName)
         self.instMngr.setTask(taskName, taskID)
 
@@ -74,17 +78,19 @@ class TaskManager(Manager):
     def _uploads(self, src, ip, des):
         strTuple = (self.config["pemFilePath"], src, self.config["username"], ip, des)
         cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s" % strTuple
-        self.print("  --> slave, IP: %s"%ip)
+        self.print("  --> node, IP: %s"%ip)
         os.system(cmds)
 
     #  repeatedly check if all node under current task is ready to connection
     #  will be time-out after 5 mins
-    def checkStatus(self):
+    def checkStatus(self,sleepFunc):
         count = 0
+        if not self.instMngr.allInitialized(): self.print("Some instances are initializing ", end="")
         while (count < 20 and not self.instMngr.allInitialized()):
             count += 1
-            self.print("Some instances are initializing")
-            time.sleep(15)
+            self.print(".",end="")
+            sleepFunc(10)
+        self.print("")
         if self.instMngr.allInitialized(): return True
         return False
 

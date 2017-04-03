@@ -2,8 +2,8 @@ import sys, io
 
 
 class Redirector:
-    def __init__(self, buffer=io.StringIO(), pauseFunc=None):
-        self.buff = buffer
+    def __init__(self, buffer=None, pauseFunc=None):
+        self.buff = buffer if buffer else io.StringIO()
         self.pauseFunc = pauseFunc
 
     def __enter__(self):
@@ -21,8 +21,8 @@ class Redirector:
 
     def flush(self):
         ret = self.buff.getvalue()
-        self.buff.close()
-        self.buff = io.StringIO()
+        self.buff.seek(0)
+        self.buff.truncate(0)
         return ret
 
 
