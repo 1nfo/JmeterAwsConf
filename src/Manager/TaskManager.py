@@ -70,17 +70,17 @@ class TaskManager(Manager):
         #         if not jmx.isSaveAsXML():
         #             jmx.saveXMLasTrue()
         self.print("Uploading files")
-        li = [i["PublicIp"] for i in self.instMngr.listInstances() if "PublicIp" in i.keys()]
-        for ip in li:
-            self._uploads(self.UploadPath, ip, self.instMngr.taskName)
+        self.connMngr.connectAll()
+        self.connMngr.cmdAll("mkdir %s"%self.instMngr.taskName)
+        self.connMngr.putAll(os.path.join(self.UploadPath),self.instMngr.taskName)
+        self.connMngr.closeAll()
         self.print("Uploaded.")
 
     #  uploads from src to ip:~/des
-    def _uploads(self, src, ip, des):
-        strTuple = (self.config["pemFilePath"], src, self.config["username"], ip, des)
-        cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s" % strTuple
-        self.print("  --> node, IP: %s"%ip)
-        os.system(cmds)
+    # def _uploads(self, src, ip, des):
+    #     strTuple = (self.config["pemFilePath"], src, self.config["username"], ip, des)
+    #     cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s" % strTuple
+    #     self.print("  --> node, IP: %s"%ip)
 
     #  repeatedly check if all node under current task is ready to connection
     #  will be time-out after 5 mins
@@ -189,7 +189,6 @@ class TaskManager(Manager):
         self.connMngr.cmdMaster(awkCmd)
         #self.print("Test done.\nUploading output csv to AWS S3")
         # s3 uploads
-        # self._uploads(self.config[".awsPath"], self.instMngr.master["PublicIp"], ".aws")
         # self.connMngr.cmdMaster(uploadS3Cmd, verbose=self.verboseOrNot)
 
         self.connMngr.closeMaster()

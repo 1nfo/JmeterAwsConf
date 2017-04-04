@@ -20,14 +20,14 @@ class SSHConnectionManager(Manager):
         self.masterConn.close()
 
     #  connect slaves whoes ID is in the IDs list,
-    #  if IDs is not specified or none, connect all slaves.  
+    #  if IDs is not specified or none, connect all slaves.
     def connectSlaves(self, IDs=None):
         if IDs is None: IDs = list(self.slavesConn.keys())
         for ID in IDs:
             self.slavesConn[ID].connect()
 
     #  close slaves whoes ID is in the IDs list,
-    #  if IDs is not specified or none, connect all slaves. 
+    #  if IDs is not specified or none, connect all slaves.
     #  issue: what if connection is not active?
     def closeSlaves(self, IDs=None):
         if IDs is None: IDs = list(self.slavesConn.keys())
@@ -46,7 +46,7 @@ class SSHConnectionManager(Manager):
     #  if cmd is a string, then all slaves receive the same cmd,
     #  if it is a list:
     #           1. if list length > # of active connections, ignore extra cmds
-    #           2. otherwise, find the top n slaves and assign them cmds in the list side by sid 
+    #           2. otherwise, find the top n slaves and assign them cmds in the list side by sid
     #  if it is a dict, then key is instance ID, value is cmd for that instance
     def cmdSlaves(self, cmd, IDs=None, verbose=None):
         verbose = verbose if verbose is not None else self.verboseOrNot
@@ -75,3 +75,19 @@ class SSHConnectionManager(Manager):
             else:
                 for ID in IDs:
                     self.slavesConn[ID].cmd(cmd, verbose)
+
+    def connectAll(self):
+        self.connectMaster()
+        self.connectSlaves()
+
+    def closeAll(self):
+        self.closeMaster()
+        self.closeSlaves()
+
+    def putAll(self,src,des,callback=None):
+        for slave in self.slavesConn.values():
+            slave.put(src,des,callback)
+
+    def cmdAll(self,cmd):
+        self.cmdMaster(cmd)
+        self.cmdSlaves(cmd)
