@@ -1,6 +1,6 @@
 class Verboser(object):
     def __init__(self):
-        self.verboseOrNot = True
+        self.verboseOrNot = False
 
     # make Verboser NOT to print responses or results to the stdin
     def mute(self):

@@ -18,6 +18,7 @@ class TaskManager(Manager):
     #    2. or specify a new id, which is not existed, to start a new task.
     def __init__(self, pauseFunc=None, sid=None):
         Manager.__init__(self)
+        Manager.verbose(self)
         self.redirector = Redirector(pauseFunc=pauseFunc)
         self.sid = sid
 
@@ -38,7 +39,7 @@ class TaskManager(Manager):
     #  update slave number
     def setSlaveNumber(self, slvNum):
         self.slaveNumber = slvNum
-        self.print("Set slave number: %d" % slvNum)
+        #self.print("Set slave number: %d" % slvNum)
 
     #  once slave number is determined, JAC will automatically add or remove nodes
     def setupInstances(self):
