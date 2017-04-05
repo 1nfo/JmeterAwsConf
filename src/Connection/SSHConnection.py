@@ -12,6 +12,7 @@ class SSHConnection(Connection, Verboser):
     def __init__(self, config):
         Connection.__init__(self)
         Verboser.__init__(self)
+        self.verbose()
         self.param = config.__dict__;
         self.ssh = SSHClient()
 

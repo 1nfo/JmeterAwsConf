@@ -18,7 +18,7 @@ class TaskManager(Manager):
     #    2. or specify a new id, which is not existed, to start a new task.
     def __init__(self, pauseFunc=None, sid=None):
         Manager.__init__(self)
-        Manager.verbose(self)
+        self.verbose()
         self.redirector = Redirector(pauseFunc=pauseFunc)
         self.sid = sid
 
@@ -190,9 +190,8 @@ class TaskManager(Manager):
         #self.print("Test done.\nUploading output csv to AWS S3")
         # s3 uploads
         # self.connMngr.cmdMaster(uploadS3Cmd, verbose=self.verboseOrNot)
-
+        # self.print("Uploaded.")
         self.connMngr.closeMaster()
-        self.print("Uploaded.")
 
     #  terminate all nodes
     def cleanup(self):
