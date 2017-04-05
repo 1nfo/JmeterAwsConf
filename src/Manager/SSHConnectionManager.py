@@ -76,17 +76,32 @@ class SSHConnectionManager(Manager):
                 for ID in IDs:
                     self.slavesConn[ID].cmd(cmd, verbose)
 
+
+    def putMaster(self,src,des,callback=None,verbose=None):
+        self.print("Upload to master",verbose=verbose)
+        self.masterConn.put(src,des,callback)
+
+
+    def putSlaves(self,src,des,callback=None,verbose=None):
+        for i,slave in enumerate(self.slavesConn.values()):
+            self.print("Upload to slave #%d"%i,verbose=verbose)
+            slave.put(src,des,callback)
+
+
     def connectAll(self):
         self.connectMaster()
         self.connectSlaves()
+
 
     def closeAll(self):
         self.closeMaster()
         self.closeSlaves()
 
-    def putAll(self,src,des,callback=None):
-        for slave in self.slavesConn.values():
-            slave.put(src,des,callback)
+
+    def putAll(self,src,des,callback=None,verbose=None):
+        self.putMaster(src,des,callback=None,verbose=verbose)
+        self.putSlaves(src,des,callback=None,verbose=verbose)
+
 
     def cmdAll(self,cmd):
         self.cmdMaster(cmd)

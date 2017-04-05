@@ -9,9 +9,12 @@ class SSHConfig(Config):
     #  init the class, by taking hosting name and a dict
     #  which contains AWS key file path and username for ssh connection
     def __init__(self, hostname="", **kargs):
-        self.key_filename = kargs["pemFilePath"]
-        self.hostname = hostname
-        self.username = kargs["username"]
+        self.param = {
+            "key_filename":kargs["pemFilePath"],
+            "hostname":hostname,
+            "username":kargs["username"]
+        }
+        self.instance_home = kargs["instance_home"]
 
     #  since the whole cluster share one key file,
     #  the only thing different for each connection is IP addr.

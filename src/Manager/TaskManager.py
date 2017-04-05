@@ -1,7 +1,7 @@
 from ..Manager import *
 from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
-from ..Util import JMX, Redirector
+from ..Util import JMX
 from ..Parser import JMXParser
 import os
 import time
@@ -10,8 +10,8 @@ from copy import deepcopy
 
 class TaskManager(Manager):
     #  config is from config.json,
-    #  if no task name when initializing, task name need to be set later;
-    #  taskID generally is not neccessary, it can be auto generated.
+    #  taskID generally is not neccessary for creating a new task, it can be auto generated.
+    #  but it must be provided when resuming a previous task
     #  UNLESS there is at least a repeated taskname running on AWS .
     #  In this case,
     #    1. you need to specify an existing ID to continue to work on old task.
@@ -19,11 +19,13 @@ class TaskManager(Manager):
     def __init__(self, pauseFunc=None, sid=None):
         Manager.__init__(self)
         self.verbose()
-        self.redirector = Redirector(pauseFunc=pauseFunc)
         self.sid = sid
+        self.instMngr = None
+
 
     def setConfig(self, config):
         self.config = deepcopy(config)
+
 
     #  set task name to task
     def startTask(self, taskName, taskID=None):
@@ -72,7 +74,7 @@ class TaskManager(Manager):
         self.print("Uploading files")
         self.connMngr.connectAll()
         self.connMngr.cmdAll("mkdir %s"%self.instMngr.taskName)
-        self.connMngr.putAll(os.path.join(self.UploadPath),self.instMngr.taskName)
+        self.connMngr.putAll(os.path.join(self.UploadPath),self.instMngr.taskName,verbose=True)
         self.connMngr.closeAll()
         self.print("Uploaded.")
 

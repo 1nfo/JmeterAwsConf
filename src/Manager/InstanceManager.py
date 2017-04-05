@@ -11,13 +11,20 @@ class InstanceManager(Manager):
     def __init__(self, config):
         Manager.__init__(self)
         self.config = config
-        self.client = Session(profile_name=config.profile_name, region_name=config.region).client('ec2')
         self.descParser = DescribeInstancesParser()
         self.taskName = ""
         self.taskID = ""
         self.taskDesc = ""
         self.master = None
         self.slaves = []
+
+    def __getattr__(self,item):
+        if item == 'client':
+            config = self.config
+            ret = self.__dict__[item] = Session(profile_name=config.profile_name, region_name=config.region).client('ec2')
+            return ret
+        else:
+            raise AttributeError
 
     # set task name and id
     def setTask(self, taskName, taskID):

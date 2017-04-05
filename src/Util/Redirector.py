@@ -12,6 +12,7 @@ class Redirector:
         return self
 
     def __exit__(self, *arg):
+        self.stdout = None
         sys.stdout = sys.__stdout__
 
     def write(self, output):

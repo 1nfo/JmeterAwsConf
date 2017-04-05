@@ -13,7 +13,7 @@ class SSHConnection(Connection, Verboser):
         Connection.__init__(self)
         Verboser.__init__(self)
         self.verbose()
-        self.param = config.__dict__;
+        self.__dict__.update(config.__dict__)
         self.ssh = SSHClient()
 
     def updateHostname(self, hostname):
@@ -43,12 +43,15 @@ class SSHConnection(Connection, Verboser):
 
     def put(self,src,des,callback=None):
         sftp = self.ssh.open_sftp()
+        sftp.chdir(self.instance_home)
         if os.path.isdir(src):
             for s in os.listdir(src):
                 if os.path.isdir(s):
                     pass
                 elif not s.startswith("."):
                     sftp.put(os.path.join(src,s),os.path.join(des,s),callback)
+                    self.print(s,verbose=False)
         else:
-            sftp.put(os.path.join(src,s),des,callback)
+            sftp.put(src,des,callback)
+        sftp.chdir()
         sftp.close()
