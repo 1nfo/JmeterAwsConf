@@ -17,55 +17,55 @@ CONFIG["pemFilePath"] = CONFIG["pemFilePath"].replace("~", os.path.expanduser('~
 # 	slavesConn = {i['InstanceId']:SSHConnection(SSHConfig(hostname = i["PublicIp"],**CONFIG)) for i in instMngr.slaves}
 # 	connMngr = SSHConnectionManager(masterConn,slavesConn)
 
-def source(arg):
-    from inspect import getsource
-    print(getsource(arg))
+# def source(arg):
+#     from inspect import getsource
+#     print(getsource(arg))
 
 
-def demo(path=None):
-    with Redirector() as re:
-        print(source(demo))
-        print('')
+# def demo(path=None):
+#     with Redirector() as re:
+#         print(source(demo))
+#         print('')
 
-        TaskName = "dummy"
-        NumberOfSalves = 2
-        UploadPath = path or "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
-        taskMngr = TaskManager(config=CONFIG)
-        try:
-            taskMngr.startTask(TaskName)
-        except Exception as exception:
-            print(exception.args[0])
-            print("Resuming first one: " + exception.args[1][0])
-            taskMngr.startTask(TaskName, taskID=exception.args[1][0])
-        taskMngr.instMngr.mute()
-        taskMngr.connMngr.mute()
-        taskMngr.setSlaveNumber(NumberOfSalves)
-        taskMngr.setUploadDir(UploadPath)
-        taskMngr.setupInstances()
-        if taskMngr.checkStatus():
-            taskMngr.refreshConnections()
-            taskMngr.uploadFiles()
-            taskMngr.updateRemotehost()
-            taskMngr.startSlavesServer()
-            taskMngr.startRDP()
-            taskMngr.runTest("smoke.jmx", "ttt.csv")
-            taskMngr.stopSlavesServer()
+#         TaskName = "dummy"
+#         NumberOfSalves = 2
+#         UploadPath = path or "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+#         taskMngr = TaskManager(config=CONFIG)
+#         try:
+#             taskMngr.startTask(TaskName)
+#         except Exception as exception:
+#             print(exception.args[0])
+#             print("Resuming first one: " + exception.args[1][0])
+#             taskMngr.startTask(TaskName, taskID=exception.args[1][0])
+#         taskMngr.instMngr.mute()
+#         taskMngr.connMngr.mute()
+#         taskMngr.setSlaveNumber(NumberOfSalves)
+#         taskMngr.setUploadDir(UploadPath)
+#         taskMngr.setupInstances()
+#         if taskMngr.checkStatus():
+#             taskMngr.refreshConnections()
+#             taskMngr.uploadFiles()
+#             taskMngr.updateRemotehost()
+#             taskMngr.startSlavesServer()
+#             taskMngr.startRDP()
+#             taskMngr.runTest("smoke.jmx", "ttt.csv")
+#             taskMngr.stopSlavesServer()
 
 
-def cleanup():
-    with Redirector() as re:
-        print(source(cleanup))
-        print('')
+# def cleanup():
+#     with Redirector() as re:
+#         print(source(cleanup))
+#         print('')
 
-        TaskName = "dummy"
-        NumberOfSalves = 2
-        UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
-        taskMngr = TaskManager(config=CONFIG)
-        try:
-            taskMngr.startTask(TaskName)
-        except Exception as exception:
-            print(exception.args[0])
-            print("Resuming first one: " + exception.args[1][0])
-            taskMngr.startTask(TaskName, taskID=exception.args[1][0])
-        taskMngr.instMngr.mute()
-        taskMngr.cleanup()
+#         TaskName = "dummy"
+#         NumberOfSalves = 2
+#         UploadPath = "/Users/shilzhao/Desktop/PARS/MonthlyBenchmark_SmokeTest"
+#         taskMngr = TaskManager(config=CONFIG)
+#         try:
+#             taskMngr.startTask(TaskName)
+#         except Exception as exception:
+#             print(exception.args[0])
+#             print("Resuming first one: " + exception.args[1][0])
+#             taskMngr.startTask(TaskName, taskID=exception.args[1][0])
+#         taskMngr.instMngr.mute()
+#         taskMngr.cleanup()

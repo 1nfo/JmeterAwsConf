@@ -3,7 +3,7 @@
     "master": "t2.micro",
     "slave": "t2.micro"
   },
-  "pemFilePath": "/Users/shilzhao/Jmeter_test_key_pair.pem",
+  "pemFilePath": "~/Jmeter_test_key_pair.pem",
   "profile_name": "admin_in_test",
   "region": "us-west-2",
   "zone": "us-west-2a",
