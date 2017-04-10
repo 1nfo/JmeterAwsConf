@@ -27,14 +27,14 @@ class InstanceManager(Manager):
             raise AttributeError
 
     # set task name and id
-    def setTask(self, taskName, taskID=None, addr=None):
+    def setTask(self, taskName, taskID=None, user=None):
         if taskName and taskID is None:
             res = self.getDupTaskIds(taskName)
             if len(res) > 0:
                 msg = "Found multiple tasks named %s, please try a new name or resume." % taskName
                 raise DupTaskException(msg)
         self.taskName = taskName
-        self.taskID = taskID if taskID else res[0] if res else self._genID(taskName,addr)
+        self.taskID = taskID if taskID else res[0] if res else self._genID(taskName,user)
         self.master = None
         self.slaves = []
         self.updateInstances()
@@ -66,9 +66,9 @@ class InstanceManager(Manager):
         index = str([i["InstanceStatus"]['Details'] for i in res]).find("initializing")
         return True if res and index < 0 else False
 
-    def _genID(self, name, addr):
+    def _genID(self, name, user):
         import time
-        return "%s_%s_%s" % (name, addr, time.strftime("%Y%m%d_%H%M%S%z"))
+        return "%s_%s_%s" % (name, user, time.strftime("%Y%m%d_%H%M%S%z"))
 
     # requests describe instances and updates master/slaves information
     def updateInstances(self):

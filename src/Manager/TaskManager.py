@@ -27,11 +27,11 @@ class TaskManager(Manager):
         self.config = deepcopy(config)
 
 
-    def create(self,taskName,addr):
+    def create(self,taskName,user):
         self.instMngr = InstanceManager(AWSConfig(**self.config))
         self.connMngr = SSHConnectionManager()
         self.print("Create task '%s'" % taskName)
-        self.instMngr.setTask(taskName, addr=addr)
+        self.instMngr.setTask(taskName, user=user)
 
 
     def resume(self,taskName,taskID):
