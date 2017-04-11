@@ -10,7 +10,7 @@
 
 ### problem:
 
-whitelist
+role assume client only have 1 hour duration
 
 ## points
 1. always one master

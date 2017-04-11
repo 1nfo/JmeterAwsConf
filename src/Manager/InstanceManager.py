@@ -21,7 +21,10 @@ class InstanceManager(Manager):
     def __getattr__(self,item):
         if item == 'client':
             config = self.config
-            ret = self.__dict__[item] = Session(profile_name=config.profile_name, region_name=config.region).client('ec2')
+            sess = Session(**config.session_param).client('sts')
+            tmp = sess.assume_role(RoleArn=self.config.role,RoleSessionName="session_"+self.taskName)["Credentials"]
+            ret = self.__dict__[item] = Session(aws_access_key_id=tmp["AccessKeyId"], aws_secret_access_key=tmp["SecretAccessKey"],
+                                                aws_session_token=tmp["SessionToken"], region_name=self.config.session_param["region_name"]).client("ec2")
             return ret
         else:
             raise AttributeError

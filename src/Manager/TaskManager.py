@@ -16,7 +16,7 @@ class TaskManager(Manager):
     #  In this case,
     #    1. you need to specify an existing ID to continue to work on old task.
     #    2. or specify a new id, which is not existed, to start a new task.
-    def __init__(self, pauseFunc=None, sid=None):
+    def __init__(self, sid=None):
         Manager.__init__(self)
         self.verbose()
         self.sid = sid
@@ -187,18 +187,11 @@ class TaskManager(Manager):
             self.instMngr.taskName, output, jmx) # -l output.csv is not the result we want.
         awkCmd = '''awk -v RS='"' 'NR % 2 == 0 {{ gsub(/\\n/, "") }} {{ printf("%s%s", $0, RT) }}' {0}/{1} >> {2}'''.format(
             self.instMngr.taskName,output,mergedOutput)
-        # uploadS3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s --profile %s" \
-        #               % (self.instMngr.taskName, output, self.config["S3Bucket"],
-        #                  self.instMngr.taskID, time.ctime().replace(" ", "_"), self.config["profile_name"])
         self.connMngr.connectMaster()
         self.connMngr.cmdMaster(confCmd)
         self.connMngr.cmdMaster("sudo systemctl restart logstash.service")
         self.connMngr.cmdMaster(runJmeterCmd, verbose=True)
         self.connMngr.cmdMaster(awkCmd)
-        #self.print("Test done.\nUploading output csv to AWS S3")
-        # s3 uploads
-        # self.connMngr.cmdMaster(uploadS3Cmd, verbose=self.verboseOrNot)
-        # self.print("Uploaded.")
         self.connMngr.closeMaster()
 
     #  terminate all nodes
