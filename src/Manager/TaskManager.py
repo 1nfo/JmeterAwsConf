@@ -199,7 +199,7 @@ class TaskManager(Manager):
         self.print("Terminating All nodes")
         self.instMngr.terminateMaster()
         self.instMngr.terminateSlaves()
-        self.print("Terminated.")
+        self.print("Terminated.\n")
 
     def esCheck(self):
         self.print("Checking elasticsearch connection")

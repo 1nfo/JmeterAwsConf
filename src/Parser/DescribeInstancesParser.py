@@ -6,6 +6,7 @@ TAG_NAME = "Name"
 TAGVAL_NAME = "JAC_"
 TAG_ROLE = "__JAC_ROLE__"
 TAG_TASKDESC = "__JAC_TASKDESC__"
+TAG_USER = "__JAC_USER__"
 
 
 # responsible for parsing describe instances response
@@ -59,13 +60,18 @@ class DescribeInstancesParser(ResponseParser):
             if j["Key"] == TAG_TASKDESC: return j["Value"]
         return ""
 
+    def _getUser(self,i):
+        for j in i:
+            if j["Key"] == TAG_USER: return j["Value"]
+        return ""
+
     def listTaskIDs(self):
         instances = []
         for i in self.response["Reservations"]:
             for j in i["Instances"]:
                 instances.append(j)
         return list(set([
-                        (self._getTaskIDs(i.get("Tags", [])), self._getTaskDesc(i.get("Tags",[])))
+                        (self._getTaskIDs(i.get("Tags", [])), self._getTaskDesc(i.get("Tags",[])), self._getUser(i.get("Tags",[])))
                         for i in instances
                         if i["State"]["Name"] not in ["terminated", "shutting-down"]
                     ]))

@@ -17,6 +17,7 @@ class InstanceManager(Manager):
         self.taskDesc = ""
         self.master = None
         self.slaves = []
+        self.user=""
 
     def __getattr__(self,item):
         if item == 'client':
@@ -40,6 +41,7 @@ class InstanceManager(Manager):
         self.taskID = taskID if taskID else res[0] if res else self._genID(taskName,user)
         self.master = None
         self.slaves = []
+        self.user = user
         self.updateInstances()
 
     # set task description
@@ -166,7 +168,8 @@ class InstanceManager(Manager):
                                                           {'Key': TAG_ROLE, 'Value': 'Master'},
                                                           {'Key': TAG_TASKNAME, "Value": self.taskName},
                                                           {'Key': TAG_TASKID, "Value": self.taskID},
-                                                          {'Key': TAG_TASKDESC, "Value": self.taskDesc}])
+                                                          {'Key': TAG_TASKDESC, "Value": self.taskDesc},
+                                                          {"Key": TAG_USER, "Value": self.user}])
             self.updateInstances()
             return ID
         else:
@@ -183,7 +186,8 @@ class InstanceManager(Manager):
         self.client.create_tags(Resources=IDs, Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.taskName},
                                                      {'Key': TAG_ROLE, 'Value': 'Slave'},
                                                      {'Key': TAG_TASKNAME, "Value": self.taskName},
-                                                     {'Key': TAG_TASKID, "Value": self.taskID}])
+                                                     {'Key': TAG_TASKID, "Value": self.taskID},
+                                                     {"Key": TAG_USER, "Value": self.user}])
         self.updateInstances()
         return IDs
 
