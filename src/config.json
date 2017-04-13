@@ -11,8 +11,8 @@
   ],
   "username": "ubuntu",
   "ami": {
-    "basic" : "ami-91058cf1",
-    "LXDM" : "ami-73038a13"
+    "slave" : "ami-91058cf1",
+    "master" : "ami-73038a13"
   },
   "propertiesPath":"/usr/local/apache-jmeter-2.13/bin/jmeter.properties",
   "logstash_conf_dir":"/etc/logstash/conf.d",

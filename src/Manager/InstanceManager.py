@@ -158,9 +158,9 @@ class InstanceManager(Manager):
     # create a master node if don't have one.
     #  by default image with lightdm which allows instance be accessed by remote desktop
     #  then tag this node with "name":"Master"
-    def addMaster(self, LXDM=True, instType=None, verbose=None):
+    def addMaster(self, instType=None, verbose=None):
         if not self.master:
-            imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
+            imageID = self.config.ami["master"]
             instType = self.config.instType["master"] if not instType else instType
             res = self.creatInstances(imageID, 1, instType, self.config.securityGroups, self.config.zone, verbose)
             ID = res['Instances'][0]["InstanceId"]
@@ -178,8 +178,8 @@ class InstanceManager(Manager):
     # create a number of slaves
     #  by default image is basic which only have jmeter and java installed
     #  then tag this node with "name":"Slave"
-    def addSlaves(self, num, LXDM=False, instType=None, verbose=None):
-        imageID = self.config.ami["LXDM"] if LXDM else self.config.ami["basic"]
+    def addSlaves(self, num, instType=None, verbose=None):
+        imageID = self.config.ami["slave"]
         instType = self.config.instType["slave"] if not instType else instType
         res = self.creatInstances(imageID, num, instType, self.config.securityGroups, self.config.zone, verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
