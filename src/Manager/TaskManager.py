@@ -30,14 +30,14 @@ class TaskManager(Manager):
     def create(self,taskName,user):
         self.instMngr = InstanceManager(AWSConfig(**self.config))
         self.connMngr = SSHConnectionManager()
-        self.print("Create task '%s'" % taskName)
+        self.print("Create task '%s'"%taskName)
         self.instMngr.setTask(taskName, user=user)
 
 
     def resume(self,taskName,taskID):
         self.instMngr = InstanceManager(AWSConfig(**self.config))
         self.connMngr = SSHConnectionManager()
-        self.print("Resume task '%s'" % taskName)
+        self.print("Resume task '%s'"%taskName)
         self.instMngr.setTask(taskName, taskID=taskID)
 
     #  set description
