@@ -18,7 +18,7 @@ class Redirector:
         self.stdout = None
 
     def write(self, output):
-        self.stdout.write(output)
+        sys.__stdout__.write(output)
         self.buff.write(output)
         if self.pauseFunc: self.pauseFunc()
 

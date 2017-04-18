@@ -92,13 +92,13 @@ class TaskManager(Manager):
 
     #  repeatedly check if all node under current task is ready to connection
     #  will be time-out after 5 mins
-    def checkStatus(self,sleepFunc):
+    def checkStatus(self,sleepFunc, checkTimes=0,checkInterval=10):
         count = 0
         if not self.instMngr.allInitialized(): self.print("Some instances are initializing ", end="")
-        while (count < 20 and not self.instMngr.allInitialized()):
+        while (count < checkTimes and not self.instMngr.allInitialized()):
             count += 1
             self.print(".",end="")
-            sleepFunc(10)
+            sleepFunc(checkInterval)
         self.print("")
         if self.instMngr.allInitialized(): return True
         return False
