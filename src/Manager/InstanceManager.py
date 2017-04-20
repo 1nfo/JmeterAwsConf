@@ -73,7 +73,7 @@ class InstanceManager(Manager):
 
     def _genID(self, name, user):
         import time
-        return "%s_%s_%s" % (name, user, time.strftime("%Y%m%d_%H%M%S%z"))
+        return "%s_%s_%s" % (name, user, time.strftime("%Y%m%d_%H%M%S",time.gmtime()))
 
     # requests describe instances and updates master/slaves information
     def updateInstances(self):
