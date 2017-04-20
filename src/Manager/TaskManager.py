@@ -4,7 +4,6 @@ from ..Connection import SSHConnection
 from ..Util import JMX
 from ..Parser import JMXParser
 import os
-import time
 from copy import deepcopy
 
 
@@ -25,18 +24,16 @@ class TaskManager(Manager):
 
     def setConfig(self, config):
         self.config = deepcopy(config)
+        self.instMngr = InstanceManager(AWSConfig(**self.config))
+        self.connMngr = SSHConnectionManager()
 
 
     def create(self,taskName,user):
-        self.instMngr = InstanceManager(AWSConfig(**self.config))
-        self.connMngr = SSHConnectionManager()
         self.print("Create task '%s'"%taskName)
         self.instMngr.setTask(taskName, user=user)
 
 
     def resume(self,taskName,taskID):
-        self.instMngr = InstanceManager(AWSConfig(**self.config))
-        self.connMngr = SSHConnectionManager()
         self.print("Resume task '%s'"%taskName)
         self.instMngr.setTask(taskName, taskID=taskID)
 
@@ -151,8 +148,6 @@ class TaskManager(Manager):
         self.connMngr.connectSlaves()
         self.connMngr.cmdSlaves("source .profile && cd %s && jmeter-server" % self.instMngr.taskName, verbose=False)
         self.connMngr.closeSlaves()
-        # wait server all started, otherwise master may think task is done.
-        time.sleep(5)
         self.print("Started.")
 
     #  stop master jmeter
