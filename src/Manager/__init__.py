@@ -1,3 +1,3 @@
 from .SSHConnectionManager import *
 from .InstanceManager import *
-from .TaskManager import *
+from .Client import *

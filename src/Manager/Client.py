@@ -7,14 +7,14 @@ import os
 from copy import deepcopy
 
 
-class TaskManager(Manager):
+class Client(Manager):
     #  config is from config.json,
-    #  taskID generally is not neccessary for creating a new task, it can be auto generated.
-    #  but it must be provided when resuming a previous task
-    #  UNLESS there is at least a repeated taskname running on AWS .
+    #  clusterID generally is not neccessary for creating a new cluster, it can be auto generated.
+    #  but it must be provided when resuming a previous cluster
+    #  UNLESS there is at least a repeated clustername running on AWS .
     #  In this case,
-    #    1. you need to specify an existing ID to continue to work on old task.
-    #    2. or specify a new id, which is not existed, to start a new task.
+    #    1. you need to specify an existing ID to continue to work on old cluster.
+    #    2. or specify a new id, which is not existed, to start a new cluster.
     def __init__(self, sid=None):
         Manager.__init__(self)
         self.verbose()
@@ -28,18 +28,18 @@ class TaskManager(Manager):
         self.connMngr = SSHConnectionManager()
 
 
-    def create(self,taskName,user):
-        self.print("Create task '%s'"%taskName)
-        self.instMngr.setTask(taskName, user=user)
+    def create(self,clusterName,user):
+        self.print("Create cluster '%s'"%clusterName)
+        self.instMngr.setCluster(clusterName, user=user)
 
 
-    def resume(self,taskName,taskID):
-        self.print("Resume task '%s'"%taskName)
-        self.instMngr.setTask(taskName, taskID=taskID)
+    def resume(self,clusterName,clusterID):
+        self.print("Resume cluster '%s'"%clusterName)
+        self.instMngr.setCluster(clusterName, clusterID=clusterID)
 
     #  set description
-    def setTaskDesc(self,desc):
-        self.instMngr.setTaskDesc(desc)
+    def setClusterDesc(self,desc):
+        self.instMngr.setClusterDesc(desc)
 
     #  update slave number
     def setSlaveNumber(self, slvNum):
@@ -76,8 +76,8 @@ class TaskManager(Manager):
         #             jmx.saveXMLasTrue()
         self.print("Uploading files")
         self.connMngr.connectAll()
-        self.connMngr.cmdAll("mkdir %s"%self.instMngr.taskName)
-        self.connMngr.putAll(os.path.join(self.UploadPath),self.instMngr.taskName,verbose=True)
+        self.connMngr.cmdAll("mkdir %s"%self.instMngr.clusterName)
+        self.connMngr.putAll(os.path.join(self.UploadPath),self.instMngr.clusterName,verbose=True)
         self.connMngr.closeAll()
         self.print("Uploaded.")
 
@@ -87,7 +87,7 @@ class TaskManager(Manager):
     #     cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s" % strTuple
     #     self.print("  --> node, IP: %s"%ip)
 
-    #  repeatedly check if all node under current task is ready to connection
+    #  repeatedly check if all node under current cluster are ready to connection
     #  will be time-out after 5 mins
     def checkStatus(self,sleepFunc, checkTimes=0,checkInterval=10):
         count = 0
@@ -146,7 +146,7 @@ class TaskManager(Manager):
     def startSlavesServer(self):
         self.print("Starting jmeter server in slaves")
         self.connMngr.connectSlaves()
-        self.connMngr.cmdSlaves("source .profile && cd %s && jmeter-server" % self.instMngr.taskName, verbose=False)
+        self.connMngr.cmdSlaves("source .profile && cd %s && jmeter-server" % self.instMngr.clusterName, verbose=False)
         self.connMngr.closeSlaves()
         self.print("Started.")
 
@@ -175,13 +175,13 @@ class TaskManager(Manager):
         jmxParser = JMXParser(JMX("%s/%s"%(self.UploadPath,jmx)))
         output = jmxParser.getOutputFilename()
         mergedOutput = "merged.csv"
-        confFile = jmxParser.getConf("/home/ubuntu/"+mergedOutput,self.instMngr.taskID,self.config["es_IP"]);
+        confFile = jmxParser.getConf("/home/ubuntu/"+mergedOutput,self.instMngr.clusterID,self.config["es_IP"]);
         confCmd = 'source .profile && echo \'%s\' > .tmpConf && sudo mv .tmpConf %s/jmeterlog.conf'%(
             confFile,self.config["logstash_conf_dir"])
         runJmeterCmd = "source .profile && cd %s && echo "" > %s && jmeter -n -t %s -r " % (
-            self.instMngr.taskName, output, jmx) # -l output.csv is not the result we want.
+            self.instMngr.clusterName, output, jmx) # -l output.csv is not the result we want.
         awkCmd = '''awk -v RS='"' 'NR % 2 == 0 {{ gsub(/\\n/, "") }} {{ printf("%s%s", $0, RT) }}' {0}/{1} >> {2}'''.format(
-            self.instMngr.taskName,output,mergedOutput)
+            self.instMngr.clusterName,output,mergedOutput)
         self.connMngr.connectMaster()
         self.connMngr.cmdMaster(confCmd)
         self.connMngr.cmdMaster("sudo systemctl restart logstash.service")

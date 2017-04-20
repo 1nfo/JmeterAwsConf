@@ -12,9 +12,9 @@ class InstanceManager(Manager):
         Manager.__init__(self)
         self.config = config
         self.descParser = DescribeInstancesParser()
-        self.taskName = ""
-        self.taskID = ""
-        self.taskDesc = ""
+        self.clusterName = ""
+        self.clusterID = ""
+        self.clusterDesc = ""
         self.master = None
         self.slaves = []
         self.user=""
@@ -23,46 +23,46 @@ class InstanceManager(Manager):
         if item == 'client':
             config = self.config
             sess = Session(**config.session_param).client('sts')
-            tmp = sess.assume_role(RoleArn=self.config.role,RoleSessionName="session_"+self.taskName)["Credentials"]
+            tmp = sess.assume_role(RoleArn=self.config.role,RoleSessionName="session_"+self.clusterName)["Credentials"]
             ret = self.__dict__[item] = Session(aws_access_key_id=tmp["AccessKeyId"], aws_secret_access_key=tmp["SecretAccessKey"],
                                                 aws_session_token=tmp["SessionToken"], region_name=self.config.session_param["region_name"]).client("ec2")
             return ret
         else:
             raise AttributeError
 
-    # set task name and id
-    def setTask(self, taskName, taskID=None, user=None):
-        if taskName and taskID is None:
-            res = self.getDupTaskIds(taskName)
+    # set cluster name and id
+    def setCluster(self, clusterName, clusterID=None, user=None):
+        if clusterName and clusterID is None:
+            res = self.getDupClusterIds(clusterName)
             if len(res) > 0:
-                msg = "Found multiple tasks named %s, please try a new name or resume." % taskName
-                raise DupTaskException(msg)
-        self.taskName = taskName
-        self.taskID = taskID if taskID else res[0] if res else self._genID(taskName,user)
+                msg = "Found multiple clusters named %s, please try a new name or resume." % clusterName
+                raise DupClusterException(msg)
+        self.clusterName = clusterName
+        self.clusterID = clusterID if clusterID else res[0] if res else self._genID(clusterName,user)
         self.master = None
         self.slaves = []
         self.user = user
         self.updateInstances()
 
-    # set task description
-    def setTaskDesc(self, desc):
-        self.taskDesc = desc
+    # set cluster description
+    def setClusterDesc(self, desc):
+        self.clusterDesc = desc
 
-    # get task descrition tag
-    def getTaskDesc(self):
-        filter_cond = [{TAG_NAME: "tag:" + TAG_TASKID, "Values": [self.taskID]},{TAG_NAME: "tag:" + TAG_ROLE, "Values": ["Master"]}]
+    # get cluster descrition tag
+    def getClusterDesc(self):
+        filter_cond = [{TAG_NAME: "tag:" + TAG_CLUSTERID, "Values": [self.clusterID]},{TAG_NAME: "tag:" + TAG_ROLE, "Values": ["Master"]}]
         self.descParser.setResponse(self.client.describe_instances(Filters=filter_cond))
-        self.taskDesc = self.descParser.getTaskDesc()
-        return self.taskDesc
+        self.clusterDesc = self.descParser.getClusterDesc()
+        return self.clusterDesc
 
-    # get TaskID set within JAC node on aws
-    def getDupTaskIds(self, taskName=None):
-        if taskName:
-            filter_cond = [{TAG_NAME: "tag:" + TAG_TASKNAME, "Values": [taskName]}]
+    # get ClusterID set within JAC node on aws
+    def getDupClusterIds(self, clusterName=None):
+        if clusterName:
+            filter_cond = [{TAG_NAME: "tag:" + TAG_CLUSTERNAME, "Values": [clusterName]}]
         else:
             filter_cond = [{TAG_NAME: "tag:" + TAG_ROLE, "Values": ["Master"]}]
         self.descParser.setResponse(self.client.describe_instances(Filters=filter_cond))
-        return self.descParser.listTaskIDs()
+        return self.descParser.listClusterIDs()
 
     # check all nodes is available to connection
     def allInitialized(self):
@@ -77,18 +77,18 @@ class InstanceManager(Manager):
 
     # requests describe instances and updates master/slaves information
     def updateInstances(self):
-        filter_cond = [{TAG_NAME: "tag:" + TAG_TASKID, "Values": [self.taskID]}]
+        filter_cond = [{TAG_NAME: "tag:" + TAG_CLUSTERID, "Values": [self.clusterID]}]
         self.descParser.setResponse(self.client.describe_instances(Filters=filter_cond))
         details = self.descParser.listDetails();
         master = [i for i in details if i["Role"] == "Master"]
         self.master = master[0] if master else None
         self.slaves = [i for i in details if i["Role"] == "Slave"]
-        self.print("Nodes: %d maseter and %d slave(s) under TASK %s" % (
-        1 if self.master else 0, len(self.slaves), self.taskName))
+        self.print("Nodes: %d maseter and %d slave(s) under CLUSTER %s" % (
+        1 if self.master else 0, len(self.slaves), self.clusterName))
 
     # list master/ slaves info
     def listInstances(self):
-        filter_cond = [{TAG_NAME: "tag:" + TAG_TASKID, "Values": [self.taskID]}]
+        filter_cond = [{TAG_NAME: "tag:" + TAG_CLUSTERID, "Values": [self.clusterID]}]
         self.descParser.setResponse(self.client.describe_instances(Filters=filter_cond))
         return self.descParser.listDetails()
 
@@ -164,11 +164,11 @@ class InstanceManager(Manager):
             instType = self.config.instType["master"] if not instType else instType
             res = self.creatInstances(imageID, 1, instType, self.config.securityGroups, self.config.zone, verbose)
             ID = res['Instances'][0]["InstanceId"]
-            self.client.create_tags(Resources=[ID], Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.taskName},
+            self.client.create_tags(Resources=[ID], Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.clusterName},
                                                           {'Key': TAG_ROLE, 'Value': 'Master'},
-                                                          {'Key': TAG_TASKNAME, "Value": self.taskName},
-                                                          {'Key': TAG_TASKID, "Value": self.taskID},
-                                                          {'Key': TAG_TASKDESC, "Value": self.taskDesc},
+                                                          {'Key': TAG_CLUSTERNAME, "Value": self.clusterName},
+                                                          {'Key': TAG_CLUSTERID, "Value": self.clusterID},
+                                                          {'Key': TAG_CLUSTERDESC, "Value": self.clusterDesc},
                                                           {"Key": TAG_USER, "Value": self.user}])
             self.updateInstances()
             return ID
@@ -183,14 +183,14 @@ class InstanceManager(Manager):
         instType = self.config.instType["slave"] if not instType else instType
         res = self.creatInstances(imageID, num, instType, self.config.securityGroups, self.config.zone, verbose)
         IDs = [i["InstanceId"] for i in res['Instances']]
-        self.client.create_tags(Resources=IDs, Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.taskName},
+        self.client.create_tags(Resources=IDs, Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.clusterName},
                                                      {'Key': TAG_ROLE, 'Value': 'Slave'},
-                                                     {'Key': TAG_TASKNAME, "Value": self.taskName},
-                                                     {'Key': TAG_TASKID, "Value": self.taskID},
+                                                     {'Key': TAG_CLUSTERNAME, "Value": self.clusterName},
+                                                     {'Key': TAG_CLUSTERID, "Value": self.clusterID},
                                                      {"Key": TAG_USER, "Value": self.user}])
         self.updateInstances()
         return IDs
 
 
-class DupTaskException(Exception):
+class DupClusterException(Exception):
     pass

@@ -1,11 +1,11 @@
 from .ResponseParser import *
 
-TAG_TASKID = "__JAC_TASKID__"
-TAG_TASKNAME = "__JAC_TASKNAME__"
+TAG_CLUSTERID = "__JAC_CLUSTERID__"
+TAG_CLUSTERNAME = "__JAC_CLUSTERNAME__"
 TAG_NAME = "Name"
 TAGVAL_NAME = "JAC_"
 TAG_ROLE = "__JAC_ROLE__"
-TAG_TASKDESC = "__JAC_TASKDESC__"
+TAG_CLUSTERDESC = "__JAC_CLUSTERDESC__"
 TAG_USER = "__JAC_USER__"
 
 
@@ -51,13 +51,13 @@ class DescribeInstancesParser(ResponseParser):
             for i in instances if i["State"]["Name"] not in ["terminated", "shutting-down"]
             ]
 
-    def _getTaskIDs(self, i):
+    def _getClusterIDs(self, i):
         for j in i:
-            if j["Key"] == TAG_TASKID: return j["Value"]
+            if j["Key"] == TAG_CLUSTERID: return j["Value"]
 
-    def _getTaskDesc(self,i):
+    def _getClusterDesc(self,i):
         for j in i:
-            if j["Key"] == TAG_TASKDESC: return j["Value"]
+            if j["Key"] == TAG_CLUSTERDESC: return j["Value"]
         return ""
 
     def _getUser(self,i):
@@ -65,21 +65,21 @@ class DescribeInstancesParser(ResponseParser):
             if j["Key"] == TAG_USER: return j["Value"]
         return ""
 
-    def listTaskIDs(self):
+    def listClusterIDs(self):
         instances = []
         for i in self.response["Reservations"]:
             for j in i["Instances"]:
                 instances.append(j)
         return list(set([
-                        (self._getTaskIDs(i.get("Tags", [])), self._getTaskDesc(i.get("Tags",[])), self._getUser(i.get("Tags",[])))
+                        (self._getClusterIDs(i.get("Tags", [])), self._getClusterDesc(i.get("Tags",[])), self._getUser(i.get("Tags",[])))
                         for i in instances
                         if i["State"]["Name"] not in ["terminated", "shutting-down"]
                     ]))
 
-    def getTaskDesc(self):
+    def getClusterDesc(self):
         instances = []
         for i in self.response["Reservations"]:
             for j in i["Instances"]:
                 instances.append(j)
         tags = instances[0]["Tags"]
-        return self._getTaskDesc(tags)
+        return self._getClusterDesc(tags)

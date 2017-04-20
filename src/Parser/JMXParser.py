@@ -32,7 +32,7 @@ class JMXParser(object):
     def getOutputFilename(self):
         return self.jmx.outputFilename
 
-    def getConf(self,csv,taskID,esIP):
+    def getConf(self,csv,clusterID,esIP):
         ret = r"""input{
   file{
     path => "%s"
@@ -45,7 +45,7 @@ filter{
         drop { }
     }
     csv{
-        add_field => {"taskID" => "%s"}
+        add_field => {"clusterID" => "%s"}
         columns => %s
     }
     mutate{
@@ -60,5 +60,5 @@ output{
         hosts => "%s"
     }
 }
-"""%(csv,taskID,str(self._getCols()).replace("'","\""),esIP)
+"""%(csv,clusterID,str(self._getCols()).replace("'","\""),esIP)
         return ret
