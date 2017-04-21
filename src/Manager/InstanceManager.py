@@ -20,12 +20,16 @@ class InstanceManager(Manager):
         self.user=""
 
     def __getattr__(self,item):
-        if item == 'client':
+        if item in ('client', 'iam'):
             config = self.config
             sess = Session(**config.session_param).client('sts')
             tmp = sess.assume_role(RoleArn=self.config.role,RoleSessionName="session_"+self.clusterName)["Credentials"]
-            ret = self.__dict__[item] = Session(aws_access_key_id=tmp["AccessKeyId"], aws_secret_access_key=tmp["SecretAccessKey"],
-                                                aws_session_token=tmp["SessionToken"], region_name=self.config.session_param["region_name"]).client("ec2")
+            ret = Session(aws_access_key_id=tmp["AccessKeyId"], aws_secret_access_key=tmp["SecretAccessKey"],
+                                                aws_session_token=tmp["SessionToken"], region_name=self.config.session_param["region_name"])
+            if item == "client":
+                ret = self.__dict__[item] = ret.client("ec2")
+            elif item == "iam":
+                ret = self.__dict__[item] = ret.client("iam")
             return ret
         else:
             raise AttributeError
@@ -72,8 +76,8 @@ class InstanceManager(Manager):
         return True if res and index < 0 else False
 
     def _genID(self, name, user):
-        import time
-        return "%s_%s_%s" % (name, user, time.strftime("%Y%m%d_%H%M%S",time.gmtime()))
+        from ..Util import now
+        return "%s_%s_%s" % (name, user, now())
 
     # requests describe instances and updates master/slaves information
     def updateInstances(self):
@@ -117,16 +121,18 @@ class InstanceManager(Manager):
         return res
 
     # internal use, lanuch a number of instances, with the same image ID, instance type, security groups and area
-    def creatInstances(self, ImageID, num, InstanceType, SecurityGroups, area, verbose):
+    def creatInstances(self, ImageID, num, InstanceType, SecurityGroups, area, verbose, role={}):
         res = self.client.run_instances(ImageId=ImageID, MinCount=num, MaxCount=num, \
                                         InstanceType=InstanceType, SecurityGroups=SecurityGroups, \
-                                        Placement={"AvailabilityZone": area})
+                                        Placement={"AvailabilityZone": area},\
+                                        IamInstanceProfile=role)
         self.print(res, verbose)
         return res
 
     def startMaster(self, verbose=None):
         if self.master:
             self.startInstances([self.master['InstanceId']], verbose)
+            # self.iam.add_role_to_instance_profile(InstanceProfileName='string',RoleName=self.config.s3role)
 
     def stopMaster(self, verbose=None):
         if self.master:
@@ -162,7 +168,7 @@ class InstanceManager(Manager):
         if not self.master:
             imageID = self.config.ami["master"]
             instType = self.config.instType["master"] if not instType else instType
-            res = self.creatInstances(imageID, 1, instType, self.config.securityGroups, self.config.zone, verbose)
+            res = self.creatInstances(imageID, 1, instType, self.config.securityGroups, self.config.zone, verbose, role=self.config.s3_role)
             ID = res['Instances'][0]["InstanceId"]
             self.client.create_tags(Resources=[ID], Tags=[{'Key': TAG_NAME, 'Value': TAGVAL_NAME + self.clusterName},
                                                           {'Key': TAG_ROLE, 'Value': 'Master'},

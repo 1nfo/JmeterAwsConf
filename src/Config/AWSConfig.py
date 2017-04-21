@@ -17,4 +17,5 @@ class AWSConfig(Config):
         self.securityGroups = kargs["security_groups"]
         self.zone = kargs["zone"]
         self.instType = kargs["InstType"]
-        self.role=kargs["role"]
+        self.role = kargs["role"]
+        self.s3_role = kargs["s3_role"]

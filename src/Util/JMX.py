@@ -8,13 +8,13 @@ class JMX(object):
         self.jmx = ET.parse(path)
         self.resCollector = self._getResCollector()
         self.sumReport = self._getSumReport()
-        self.outputFilename = self._getOutputFilename()
 
     def _getResCollector(self):
         return self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]')
 
-    def _getOutputFilename(self):
-        return self.resCollector.find('.//stringProp[@name="filename"]').text
+    def setOutputFilename(self,name):
+        self.resCollector.find('.//stringProp[@name="filename"]').text = name
+        self.jmx.write(self.path)
 
     def _getSumReport(self):
         def transfer(i):
@@ -24,9 +24,9 @@ class JMX(object):
         children = self.resCollector.find('.//value[@class="SampleSaveConfiguration"]').getchildren()
         return {c.tag:transfer(c.text) for c in children }
 
-    def isSaveAsXML(self):
-        return self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]//value[@class="SampleSaveConfiguration"]//xml').text=="true"
+    # def isSaveAsXML(self):
+    #     return self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]//value[@class="SampleSaveConfiguration"]//xml').text=="true"
 
-    def saveXMLasTrue(self):
-        self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]//value[@class="SampleSaveConfiguration"]//xml').text = "true"
-        self.jmx.write(self.path)
+    # def saveXMLasTrue(self):
+    #     self.jmx.find('.//ResultCollector[@guiclass="SummaryReport"]//value[@class="SampleSaveConfiguration"]//xml').text = "true"
+    #     self.jmx.write(self.path)

@@ -29,8 +29,8 @@ class JMXParser(object):
         return cols
 
 
-    def getOutputFilename(self):
-        return self.jmx.outputFilename
+    def setOutput(self,name):
+        return self.jmx.setOutputFilename(name)
 
     def getConf(self,csv,clusterID,esIP):
         ret = r"""input{

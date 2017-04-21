@@ -1,7 +1,7 @@
 from ..Manager import *
 from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
-from ..Util import JMX
+from ..Util import JMX, now
 from ..Parser import JMXParser
 import os
 from copy import deepcopy
@@ -33,9 +33,9 @@ class ClusterManager(Manager):
         self.instMngr.setCluster(clusterName, user=user)
 
 
-    def resume(self,clusterName,clusterID):
+    def resume(self,clusterName,clusterID,user):
         self.print("Resume cluster '%s'"%clusterName)
-        self.instMngr.setCluster(clusterName, clusterID=clusterID)
+        self.instMngr.setCluster(clusterName, clusterID=clusterID, user=user)
 
     #  set description
     def setClusterDesc(self,desc):
@@ -44,7 +44,6 @@ class ClusterManager(Manager):
     #  update slave number
     def setSlaveNumber(self, slvNum):
         self.slaveNumber = slvNum
-        #self.print("Set slave number: %d" % slvNum)
 
     #  once slave number is determined, JAC will automatically add or remove nodes
     def setupInstances(self):
@@ -68,24 +67,12 @@ class ClusterManager(Manager):
 
     #  upload the directory to all the nodes, master and slaves
     def uploadFiles(self):
-        # # make sure every jmx save output as xml
-        # for jmxPath in os.listdir(self.UploadPath):
-        #     if jmxPath.endswith(".jmx"):
-        #         jmx = JMX("%s/%s"%(self.UploadPath,jmxPath))
-        #         if not jmx.isSaveAsXML():
-        #             jmx.saveXMLasTrue()
         self.print("Uploading files")
         self.connMngr.connectAll()
         self.connMngr.cmdAll("mkdir %s"%self.instMngr.clusterName)
         self.connMngr.putAll(os.path.join(self.UploadPath),self.instMngr.clusterName,verbose=True)
         self.connMngr.closeAll()
         self.print("Uploaded.")
-
-    #  uploads from src to ip:~/des
-    # def _uploads(self, src, ip, des):
-    #     strTuple = (self.config["pemFilePath"], src, self.config["username"], ip, des)
-    #     cmds = "scp -o 'StrictHostKeyChecking no' -i %s -r %s/. %s@%s:~/%s" % strTuple
-    #     self.print("  --> node, IP: %s"%ip)
 
     #  repeatedly check if all node under current cluster are ready to connection
     #  will be time-out after 5 mins
@@ -169,11 +156,12 @@ class ClusterManager(Manager):
     #  run jmeter with args
     #  1. -t jmx, jmx file you want to run under you upload path
     #  2. -l output, the output file name
-    def runTest(self, jmx):
+    def runTest(self, jmx, output):
         self.print("\nrunning test now ...")
+        output+="_"+now()
         # logstash conf files
         jmxParser = JMXParser(JMX("%s/%s"%(self.UploadPath,jmx)))
-        output = jmxParser.getOutputFilename()
+        jmxParser.setOutput(output)
         mergedOutput = "merged.csv"
         confFile = jmxParser.getConf("/home/ubuntu/"+mergedOutput,self.instMngr.clusterID,self.config["es_IP"]);
         confCmd = 'source .profile && echo \'%s\' > .tmpConf && sudo mv .tmpConf %s/jmeterlog.conf'%(
@@ -182,11 +170,15 @@ class ClusterManager(Manager):
             self.instMngr.clusterName, output, jmx) # -l output.csv is not the result we want.
         awkCmd = '''awk -v RS='"' 'NR % 2 == 0 {{ gsub(/\\n/, "") }} {{ printf("%s%s", $0, RT) }}' {0}/{1} >> {2}'''.format(
             self.instMngr.clusterName,output,mergedOutput)
+        s3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s" % \
+                (self.instMngr.clusterName, output, self.config["s3_bucket"], self.instMngr.user, output)
         self.connMngr.connectMaster()
+        self.connMngr.putMaster(os.path.join(self.UploadPath,jmx),self.instMngr.clusterName)
         self.connMngr.cmdMaster(confCmd)
         self.connMngr.cmdMaster("sudo systemctl restart logstash.service")
         self.connMngr.cmdMaster(runJmeterCmd, verbose=True)
         self.connMngr.cmdMaster(awkCmd)
+        self.connMngr.cmdMaster(s3Cmd, verbose=True)
         self.connMngr.closeMaster()
 
     #  terminate all nodes

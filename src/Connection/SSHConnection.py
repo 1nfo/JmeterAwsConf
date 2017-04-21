@@ -52,6 +52,6 @@ class SSHConnection(Connection, Verboser):
                     sftp.put(os.path.join(src,s),os.path.join(des,s),callback)
                     self.print(s,verbose=False)
         else:
-            sftp.put(src,des,callback)
+            sftp.put(src,os.path.join(des,src.split("/")[-1]),callback)
         sftp.chdir()
         sftp.close()
