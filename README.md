@@ -18,8 +18,7 @@ role assume client only have 1 hour duration
 4. The ssh key file is also same in the cluster.
 5. configuration parameters are stored under /config
 6. Master/slaves are identified by tag, (i.e. \_\_JAC\_\<key name\>\_\_), don't change tag!
-4. one cluster is responsible for only on tasks. multiple clusters
-5. 
+
 
 ## Prerequisites
 

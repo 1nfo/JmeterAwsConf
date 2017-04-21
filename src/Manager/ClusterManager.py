@@ -7,7 +7,7 @@ import os
 from copy import deepcopy
 
 
-class Client(Manager):
+class ClusterManager(Manager):
     #  config is from config.json,
     #  clusterID generally is not neccessary for creating a new cluster, it can be auto generated.
     #  but it must be provided when resuming a previous cluster
