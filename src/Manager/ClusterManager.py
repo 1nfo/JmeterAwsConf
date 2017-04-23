@@ -1,4 +1,7 @@
-from ..Manager import *
+from .Manager import *
+from .InstanceManager import *
+from .SSHConnectionManager import *
+from .ResultManager import *
 from ..Config import AWSConfig, SSHConfig
 from ..Connection import SSHConnection
 from ..Util import JMX, now
@@ -19,23 +22,25 @@ class ClusterManager(Manager):
         Manager.__init__(self)
         self.verbose()
         self.sid = sid
-        self.instMngr = None
 
 
     def setConfig(self, config):
         self.config = deepcopy(config)
         self.instMngr = InstanceManager(AWSConfig(**self.config))
+        self.resMngr = ResultManager(AWSConfig(**self.config))
         self.connMngr = SSHConnectionManager()
 
 
     def create(self,clusterName,user):
         self.print("Create cluster '%s'"%clusterName)
         self.instMngr.setCluster(clusterName, user=user)
+        self.resMngr.setInfo(user,clusterName)
 
 
     def resume(self,clusterName,clusterID,user):
         self.print("Resume cluster '%s'"%clusterName)
         self.instMngr.setCluster(clusterName, clusterID=clusterID, user=user)
+        self.resMngr.setInfo(user,clusterName)
 
     #  set description
     def setClusterDesc(self,desc):

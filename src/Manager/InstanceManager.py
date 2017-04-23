@@ -1,16 +1,16 @@
 import json
-from boto3 import Session
 from ..Parser import *
 from .Manager import Manager
+from .BotoSession import BotoSession
 
 
 # instance manager is responsible to provide wrapped API from SDK
 #  to control master and slaves' lifecycle
-class InstanceManager(Manager):
+class InstanceManager(Manager,BotoSession):
     # init with AWSConfig class
     def __init__(self, config):
         Manager.__init__(self)
-        self.config = config
+        BotoSession.__init__(self,config)
         self.descParser = DescribeInstancesParser()
         self.clusterName = ""
         self.clusterID = ""
@@ -21,15 +21,15 @@ class InstanceManager(Manager):
 
     def __getattr__(self,item):
         if item in ('client', 'iam'):
-            config = self.config
-            sess = Session(**config.session_param).client('sts')
-            tmp = sess.assume_role(RoleArn=self.config.role,RoleSessionName="session_"+self.clusterName)["Credentials"]
-            ret = Session(aws_access_key_id=tmp["AccessKeyId"], aws_secret_access_key=tmp["SecretAccessKey"],
-                                                aws_session_token=tmp["SessionToken"], region_name=self.config.session_param["region_name"])
+            # sess = Session(**config.session_param).client('sts')
+            # tmp = sess.assume_role(RoleArn=self.config.role,RoleSessionName="session_"+self.clusterName)["Credentials"]
+            # ret = Session(aws_access_key_id=tmp["AccessKeyId"], aws_secret_access_key=tmp["SecretAccessKey"],
+                                #                aws_session_token=tmp["SessionToken"], region_name=self.config.session_param["region_name"])
+            sess = self.newSess(self.clusterName)
             if item == "client":
-                ret = self.__dict__[item] = ret.client("ec2")
+                ret = self.__dict__[item] = sess.client("ec2")
             elif item == "iam":
-                ret = self.__dict__[item] = ret.client("iam")
+                ret = self.__dict__[item] = sess.client("iam")
             return ret
         else:
             raise AttributeError
