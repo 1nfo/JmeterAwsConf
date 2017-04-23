@@ -171,18 +171,22 @@ class ClusterManager(Manager):
         confFile = jmxParser.getConf("/home/ubuntu/"+mergedOutput,self.instMngr.clusterID,self.config["es_IP"]);
         confCmd = 'source .profile && echo \'%s\' > .tmpConf && sudo mv .tmpConf %s/jmeterlog.conf'%(
             confFile,self.config["logstash_conf_dir"])
-        runJmeterCmd = "source .profile && cd %s && echo "" > %s && jmeter -n -t %s -r " % (
-            self.instMngr.clusterName, output, jmx) # -l output.csv is not the result we want.
+        runJmeterCmd = "source .profile && cd %s && : > %s && jmeter -n -t %s -r " % (
+            self.instMngr.clusterName, output, jmx)
         awkCmd = '''awk -v RS='"' 'NR % 2 == 0 {{ gsub(/\\n/, "") }} {{ printf("%s%s", $0, RT) }}' {0}/{1} >> {2}'''.format(
             self.instMngr.clusterName,output,mergedOutput)
-        s3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s" % \
+        s3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s.jtl" % \
                 (self.instMngr.clusterName, output, self.config["s3_bucket"], self.instMngr.user, output)
+        aggCmd = ('source .profile && cd {0} && JMeterPluginsCMD.sh --generate-csv {1}.csv --input-jtl {1} --plugin-type AggregateReport'+\
+                 ' && aws s3 cp {1}.csv s3://{2}/{3}/summary/{1}.csv')\
+                 .format(self.instMngr.clusterName,output,self.config["s3_bucket"],self.instMngr.user)
         self.connMngr.connectMaster()
         self.connMngr.putMaster(os.path.join(self.UploadPath,jmx),self.instMngr.clusterName)
         self.connMngr.cmdMaster(confCmd)
         self.connMngr.cmdMaster("sudo systemctl restart logstash.service")
         self.connMngr.cmdMaster(runJmeterCmd, verbose=True)
         self.connMngr.cmdMaster(awkCmd)
+        self.connMngr.cmdMaster(aggCmd)
         self.connMngr.cmdMaster(s3Cmd, verbose=True)
         self.connMngr.closeMaster()
 
