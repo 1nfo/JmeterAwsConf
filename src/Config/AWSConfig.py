@@ -19,3 +19,4 @@ class AWSConfig(Config):
         self.instType = kargs["InstType"]
         self.role = kargs["role"]
         self.s3_role = kargs["s3_role"]
+        self.s3bucket = kargs["s3_bucket"]

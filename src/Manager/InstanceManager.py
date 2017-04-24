@@ -32,7 +32,8 @@ class InstanceManager(Manager,BotoSession):
                 ret = self.__dict__[item] = sess.client("iam")
             return ret
         else:
-            raise AttributeError
+            raise AttributeError("No attribute %s"%item)
+
 
     # set cluster name and id
     def setCluster(self, clusterName, clusterID=None, user=None):

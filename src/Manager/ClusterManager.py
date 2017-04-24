@@ -26,21 +26,19 @@ class ClusterManager(Manager):
 
     def setConfig(self, config):
         self.config = deepcopy(config)
-        self.instMngr = InstanceManager(AWSConfig(**self.config))
         self.resMngr = ResultManager(AWSConfig(**self.config))
+        self.instMngr = InstanceManager(AWSConfig(**self.config))
         self.connMngr = SSHConnectionManager()
 
 
     def create(self,clusterName,user):
         self.print("Create cluster '%s'"%clusterName)
         self.instMngr.setCluster(clusterName, user=user)
-        self.resMngr.setInfo(user,clusterName)
 
 
     def resume(self,clusterName,clusterID,user):
         self.print("Resume cluster '%s'"%clusterName)
         self.instMngr.setCluster(clusterName, clusterID=clusterID, user=user)
-        self.resMngr.setInfo(user,clusterName)
 
     #  set description
     def setClusterDesc(self,desc):
@@ -175,10 +173,10 @@ class ClusterManager(Manager):
             self.instMngr.clusterName, output, jmx)
         awkCmd = '''awk -v RS='"' 'NR % 2 == 0 {{ gsub(/\\n/, "") }} {{ printf("%s%s", $0, RT) }}' {0}/{1} >> {2}'''.format(
             self.instMngr.clusterName,output,mergedOutput)
-        s3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s.jtl" % \
+        s3Cmd = "source .profile && cd %s && aws s3 cp %s s3://%s/%s/%s" % \
                 (self.instMngr.clusterName, output, self.config["s3_bucket"], self.instMngr.user, output)
-        aggCmd = ('source .profile && cd {0} && JMeterPluginsCMD.sh --generate-csv {1}.csv --input-jtl {1} --plugin-type AggregateReport'+\
-                 ' && aws s3 cp {1}.csv s3://{2}/{3}/summary/{1}.csv')\
+        aggCmd = ('source .profile && cd {0} && JMeterPluginsCMD.sh --generate-csv {1}.agg --input-jtl {1} --plugin-type AggregateReport'+\
+                 ' && aws s3 cp {1}.agg s3://{2}/{3}/summary/{1}')\
                  .format(self.instMngr.clusterName,output,self.config["s3_bucket"],self.instMngr.user)
         self.connMngr.connectMaster()
         self.connMngr.putMaster(os.path.join(self.UploadPath,jmx),self.instMngr.clusterName)
