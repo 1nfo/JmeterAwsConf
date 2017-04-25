@@ -19,8 +19,16 @@ class ResultManager(Manager,BotoSession):
 
     def list(self):
         res = self.client.list_objects(Bucket=self.config.s3bucket,Prefix=self.user+"/"+"summary/")
-        return [i["Key"] for i in res["Contents"]]
+        return [
+            {
+                "Key":i["Key"],
+                "Name":i["Key"].split("/")[-1].split("_")[0],
+                "LastModified":i["LastModified"].strftime("%Y/%m/%d %H:%M:%S"),
+                "Size":i["Size"]
+            }
+            for i in res["Contents"]
+        ]
 
     def get(self,path):
         body = self.client.get_object(Bucket=self.config.s3bucket,Key=path)["Body"]
-        return body.read().decode('utf-8')
+        return body.read().decode('utf-8').strip()
