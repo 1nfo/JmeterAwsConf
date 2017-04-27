@@ -6,4 +6,4 @@ from .Connection import SSHConnection
 from .Util import Redirector
 
 CONFIG = json.load(open(__path__[0] + "/config.json"))
-CONFIG["pemFilePath"] = CONFIG["pemFilePath"].replace("~", os.path.expanduser('~'))
+CONFIG["pemFilePath"] = os.path.join(os.path.expanduser('~'),CONFIG["pemFilePath"])
